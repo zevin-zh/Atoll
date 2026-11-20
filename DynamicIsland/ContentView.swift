@@ -244,6 +244,8 @@ struct ContentView: View {
     @State private var hoverTask: Task<Void, Never>?
     /// 形状动画期间 SwiftUI 会误报 hover 离开，这里延迟复核指针是否真的走了。
     @State private var hoverExitRecheckTask: Task<Void, Never>?
+    /// 位置轮询兜底：完全不依赖 SwiftUI 的 onHover 命中测试。
+    @State private var hoverPollerTask: Task<Void, Never>?
     @State private var isHovering: Bool = false
     @State private var lastHapticTime: Date = Date()
     @State private var hoverClickMonitor: Any?
@@ -756,6 +758,7 @@ struct ContentView: View {
                 : 0
             )
             .onAppear(perform: {
+                startHoverPolling()
                 if coordinator.firstLaunch && !isConnectivityHUDVisible {
                     // Single open during first launch; closeHello() handles the timed close.
                     runAfter(1) {
@@ -2381,6 +2384,33 @@ struct ContentView: View {
                     self.finishHoverExit()
                 }
             }
+        }
+    }
+
+    /// 100ms 位置轮询：直接按鼠标坐标判断是否在刘海上，绕开 onHover 的抖动。
+    private func startHoverPolling() {
+        hoverPollerTask?.cancel()
+        hoverPollerTask = Task { @MainActor in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(100))
+                if Task.isCancelled { break }
+                pollHover()
+            }
+        }
+    }
+
+    private func pollHover() {
+        guard Defaults[.openNotchOnHover],
+              !coordinator.isHoverOpenSuppressed,
+              !lockScreenManager.isLocked,
+              !isSneakPeekVisibleOnCurrentScreen,
+              vm.notchState == .closed else { return }
+
+        let inside = isMouseOverClosedNotchHitArea()
+        if inside, !isHovering {
+            handleHover(true)
+        } else if !inside, isHovering {
+            finishHoverExit()
         }
     }
 
