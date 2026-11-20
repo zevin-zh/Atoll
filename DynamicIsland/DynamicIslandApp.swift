@@ -432,6 +432,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 //.moveToSky()
         )
         
+        NotchBridge.shared.viewModel = viewModel
+        let dropCatcher = NotchFileDropCatcher()
+        dropCatcher.frame = NSRect(x: (window.frame.width - 260) / 2,
+                                   y: window.frame.height - 44,
+                                   width: 260,
+                                   height: 44)
+        dropCatcher.autoresizingMask = [.minXMargin, .maxXMargin, .minYMargin]
+        window.contentView?.addSubview(dropCatcher)
+
         window.orderFrontRegardless()
         NotchSpaceManager.shared.notchSpace.windows.insert(window)
         //SkyLightOperator.shared.delegateWindow(window)
@@ -1811,5 +1820,63 @@ final class MediaControlsStateCoordinator {
         guard let cached = Defaults[.cachedMusicControlWindowPreference] else { return }
         Defaults[.musicControlWindowEnabled] = cached
         Defaults[.cachedMusicControlWindowPreference] = nil
+    }
+}
+
+// MARK: - 拖文件到刘海 → 自动展开暂存架
+
+/// SwiftUI 的 DynamicIslandViewModel 没有单例，这里留一个弱引用给 AppKit 侧使用。
+@MainActor
+final class NotchBridge {
+    static let shared = NotchBridge()
+    weak var viewModel: DynamicIslandViewModel?
+    private init() {}
+}
+
+/// 只覆盖刘海那一小块：拖文件进来时展开岛并切到暂存架，松手即入库。
+@MainActor
+final class NotchFileDropCatcher: NSView {
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        registerForDraggedTypes([.fileURL])
+        wantsLayer = true
+        layer?.backgroundColor = NSColor.clear.cgColor
+    }
+
+    required init?(coder: NSCoder) { fatalError("programmatic only") }
+
+    // 点击刘海仍然要能展开，所以不透明于鼠标事件。
+    override func mouseDown(with event: NSEvent) {
+        NotchBridge.shared.viewModel?.open()
+        DynamicIslandViewCoordinator.shared.currentView = .shelf
+    }
+
+    private func fileURLs(_ info: NSDraggingInfo) -> [URL] {
+        let options: [NSPasteboard.ReadingOptionKey: Any] = [.urlReadingFileURLsOnly: true]
+        return (info.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: options) as? [URL]) ?? []
+    }
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        guard !fileURLs(sender).isEmpty else { return [] }
+        NotchBridge.shared.viewModel?.open()
+        DynamicIslandViewCoordinator.shared.currentView = .shelf
+        return .copy
+    }
+
+    override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
+        fileURLs(sender).isEmpty ? [] : .copy
+    }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        let urls = fileURLs(sender)
+        guard !urls.isEmpty else { return false }
+        Task { @MainActor in
+            let items = await ShelfDropService.items(from: urls)
+            guard !items.isEmpty else { return }
+            ShelfStateViewModel.shared.add(items)
+            DynamicIslandViewCoordinator.shared.currentView = .shelf
+            NotchBridge.shared.viewModel?.open()
+        }
+        return true
     }
 }
