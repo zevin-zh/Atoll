@@ -242,6 +242,8 @@ struct ContentView: View {
     
 
     @State private var hoverTask: Task<Void, Never>?
+    /// 形状动画期间 SwiftUI 会误报 hover 离开，这里延迟复核指针是否真的走了。
+    @State private var hoverExitRecheckTask: Task<Void, Never>?
     @State private var isHovering: Bool = false
     @State private var lastHapticTime: Date = Date()
     @State private var hoverClickMonitor: Any?
@@ -356,7 +358,7 @@ struct ContentView: View {
         if vm.notchState == .open && Defaults[.extendHoverArea] {
             return 0
         }
-        return vm.effectiveClosedNotchHeight == 0 ? zeroHeightHoverPadding : 0
+        return vm.effectiveClosedNotchHeight == 0 ? zeroHeightHoverPadding : 6
     }
 
     private var notchBottomPadding: CGFloat {
@@ -2306,6 +2308,13 @@ struct ContentView: View {
             return
         }
 
+        if !hovering, isMouseOverClosedNotchHitArea() {
+            // 指针其实还停在刘海上，只是内容形状在动画 —— 保留待触发的悬停任务。
+            scheduleHoverExitRecheck()
+            return
+        }
+
+        hoverExitRecheckTask?.cancel()
         hoverTask?.cancel()
 
         if hovering {
@@ -2371,6 +2380,26 @@ struct ContentView: View {
                     }
                     self.finishHoverExit()
                 }
+            }
+        }
+    }
+
+    /// 悬停离开的延迟复核：300ms 后指针仍不在刘海命中区，才真正退出。
+    private func scheduleHoverExitRecheck() {
+        hoverExitRecheckTask?.cancel()
+        hoverExitRecheckTask = Task {
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                guard !self.isMouseOverClosedNotchHitArea(),
+                      !self.shouldRetainHoverAtScreenTopEdge() else { return }
+                self.hoverTask?.cancel()
+                if self.isHoveringClosedMusicWaveformControl {
+                    withAnimation(.smooth(duration: 0.16)) {
+                        self.isHoveringClosedMusicWaveformControl = false
+                    }
+                }
+                self.finishHoverExit()
             }
         }
     }
