@@ -65,10 +65,9 @@ struct ShelfView: View {
         HStack(spacing: 12) {
             if !showAllFiles {
                 FileShareView()
-                    // 隔空投送块固定为小方块，不再跟随岛高占一半宽度，
-                    // 把空间让给文件网格。
-                    .frame(height: 120)
-                    .aspectRatio(1, contentMode: .fit)
+                    // 隔空投送块：窄条（60pt 宽），高度随文件区边框拉满。
+                    .frame(width: 60)
+                    .frame(maxHeight: .infinity)
                     .environmentObject(vm)
             }
             panel
