@@ -94,11 +94,12 @@ struct NotchClipboardView: View {
             // the clear-history alert is open, onChange never fires false and it leaks.
             vm.setAutoCloseSuppression(false, token: autoCloseToken)
         }
-        .alert("Clear Clipboard History?", isPresented: $showClearHistoryAlert) {
-            Button("Clear History", role: .destructive) { clipboardManager.clearHistory() }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This removes every saved clipboard item from the notch tab.")
+        // 系统 .alert 会在整个面板上铺遮罩 —— 面板比岛大，会露出灰色矩形。
+        // 改成岛内自绘确认卡，遮罩只落在卡片上。
+        .overlay {
+            if showClearHistoryAlert {
+                clearHistoryConfirmCard
+            }
         }
         .onChange(of: showClearHistoryAlert) { _, isShowing in
             vm.setAutoCloseSuppression(isShowing, token: autoCloseToken)
@@ -108,6 +109,59 @@ struct NotchClipboardView: View {
                 clipboardManager.startMonitoring()
             }
         }
+    }
+
+    private var clearHistoryConfirmCard: some View {
+        VStack(spacing: 10) {
+            Text("Clear Clipboard History?")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white)
+            Text("This removes every saved clipboard item from the notch tab.")
+                .font(.system(size: 11))
+                .foregroundStyle(.white.opacity(0.65))
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: 8) {
+                Button {
+                    showClearHistoryAlert = false
+                } label: {
+                    Text("Cancel")
+                        .font(.system(size: 12, weight: .medium))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 7)
+                        .background(Capsule().fill(.white.opacity(0.12)))
+                        .foregroundStyle(.white)
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    clipboardManager.clearHistory()
+                    showClearHistoryAlert = false
+                } label: {
+                    Text("Clear History")
+                        .font(.system(size: 12, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 7)
+                        .background(Capsule().fill(Color.red.opacity(0.85)))
+                        .foregroundStyle(.white)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.top, 2)
+        }
+        .padding(16)
+        .frame(maxWidth: 320)
+        .background {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(.black.opacity(0.82))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .strokeBorder(.white.opacity(0.12), lineWidth: 1)
+        }
+        .padding(12)
+        .transition(.opacity.combined(with: .scale(scale: 0.96)))
     }
 
     private var header: some View {
