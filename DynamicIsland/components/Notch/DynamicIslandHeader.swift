@@ -86,7 +86,7 @@ struct DynamicIslandHeader: View {
     var body: some View {
         HStack(spacing: 0) {
             HStack {
-                if !enableMinimalisticUI {
+                if true {   // 简约模式也显示标签栏（只含暂存架/剪贴板）
                     let shouldShowTabs = coordinator.alwaysShowTabs || vm.notchState == .open || !shelfState.items.isEmpty
                     if shouldShowTabs {
                         TabSelectionView()
