@@ -345,7 +345,9 @@ struct ContentView: View {
                 ForEach(pagerOrder, id: \.self) { view in
                     pagerPage(for: view)
                         .containerRelativeFrame(.horizontal)
-                        .frame(maxHeight: .infinity)
+                        // 页面内容为空时（如剪贴板无记录）撑住最小高度，
+                        // 否则岛背景会跟着内容一起塌掉。
+                        .frame(minHeight: 200, maxHeight: .infinity)
                         .id(view)
                 }
             }
@@ -353,7 +355,7 @@ struct ContentView: View {
         }
         .scrollTargetBehavior(.paging)
         .scrollPosition(id: pagerSelection)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(minHeight: 200)
         .scrollIndicators(.hidden)
         .scrollDisabled(false)
     }
@@ -736,11 +738,6 @@ struct ContentView: View {
 
     private var mainLayoutBase: some View {
         NotchLayout()
-            // 展开态把高度钉死：剪贴板清空后内部 ScrollView 会塌成 0 高，
-            // 而 .background(.black) + .clipShape 是跟着内容走的，
-            // 于是整块岛背景会跟着一起消失。
-            .frame(height: vm.notchState == .open ? openNotchSize.height : nil,
-                   alignment: .top)
             .frame(alignment: .top)
             // Connectivity HUD metrics already describe the complete surface.
             // Applying the regular closed-notch inset here makes that surface
