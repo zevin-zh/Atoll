@@ -433,6 +433,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
         
         NotchBridge.shared.viewModel = viewModel
+        NotchBridge.shared.window = window
         let dropCatcher = NotchFileDropCatcher()
         dropCatcher.frame = NSRect(x: (window.frame.width - 260) / 2,
                                    y: window.frame.height - 44,
@@ -1848,6 +1849,8 @@ final class MediaControlsStateCoordinator {
 final class NotchBridge {
     static let shared = NotchBridge()
     weak var viewModel: DynamicIslandViewModel?
+    /// 灵动岛窗口本身，用来做精确的"指针是否在岛上"判定。
+    weak var window: NSWindow?
     /// 文件拖拽进行中：悬停轮询要让路，窗口也别播缓动（否则会跳一下）。
     var isFileDragActive = false
     private init() {}

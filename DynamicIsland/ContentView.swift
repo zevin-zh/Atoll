@@ -2396,7 +2396,8 @@ struct ContentView: View {
     private func handleFileDragIfNeeded() -> Bool {
         let dragBoard = NSPasteboard(name: .drag)
         let types = dragBoard.types ?? []
-        let isFileDrag = types.contains(.fileURL)
+        // 拖拽结束后 .drag 粘贴板可能还留着类型，必须同时要求鼠标键处于按下状态。
+        let isFileDrag = types.contains(.fileURL) && NSEvent.pressedMouseButtons != 0
 
         guard isFileDrag else {
             if NotchBridge.shared.isFileDragActive {
@@ -2417,24 +2418,10 @@ struct ContentView: View {
         return true
     }
 
-    /// 刘海附近一块宽松区域（比真实刘海宽、比面板矮一点），用来判断
-    /// "拖着文件靠过来"的意图，避免在屏幕其他地方拖动也弹岛。
+    /// 指针是否真的落在灵动岛上（用窗口真实位置判定，只留 4pt 容差）。
     private func isPointerNearNotchRegion() -> Bool {
-        guard let screen = NSScreen.screens.first(where: { $0.safeAreaInsets.top > 0 }) ?? NSScreen.main else {
-            return false
-        }
-        let location = NSEvent.mouseLocation
-        var notchWidth: CGFloat = 200
-        if let left = screen.auxiliaryTopLeftArea, let right = screen.auxiliaryTopRightArea {
-            notchWidth = right.minX - left.maxX
-        }
-        let width = notchWidth + 320
-        let height: CGFloat = 260
-        let rect = NSRect(x: screen.frame.midX - width / 2,
-                          y: screen.frame.maxY - height,
-                          width: width,
-                          height: height)
-        return rect.contains(location)
+        guard let frame = NotchBridge.shared.window?.frame else { return false }
+        return frame.insetBy(dx: -4, dy: -4).contains(NSEvent.mouseLocation)
     }
 
     /// 100ms 位置轮询：直接按鼠标坐标判断是否在刘海上，绕开 onHover 的抖动。
