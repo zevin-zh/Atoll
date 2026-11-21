@@ -704,9 +704,11 @@ struct ContentView: View {
                     .transition(.blurReplace.animation(.interactiveSpring(dampingFraction: 1.2)))
             }
             .conditionalModifier(useModernCloseAnimation) { view in
-                let hoverAnimation = Animation.bouncy.speed(1.2)
-                let openAnimation = Animation.spring(response: 0.42, dampingFraction: 1.0, blendDuration: 0)
-                let closeAnimation = Animation.spring(response: 0.45, dampingFraction: 1.0, blendDuration: 0)
+                // 原来 open/close 都是 dampingFraction 1.0（完全不回弹），
+                // 收放像被硬切；给一点回弹余量，手感更接近 iOS 灵动岛。
+                let hoverAnimation = Animation.spring(response: 0.26, dampingFraction: 0.86)
+                let openAnimation = Animation.spring(response: 0.46, dampingFraction: 0.84, blendDuration: 0.2)
+                let closeAnimation = Animation.spring(response: 0.36, dampingFraction: 0.94, blendDuration: 0.1)
                 let notchAnimation = vm.notchState == .open ? openAnimation : closeAnimation
                 return view
                     .animation(hoverAnimation, value: isHovering)

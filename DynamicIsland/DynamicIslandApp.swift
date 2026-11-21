@@ -692,7 +692,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // considered, but an unchanged frame still needs no AppKit display
         // transaction. Avoiding that no-op matters during hover/click opens.
         guard window.frame != targetFrame else { return }
-        window.setFrame(targetFrame, display: true)
+
+        // 窗口尺寸原本是瞬跳的（`animated` 参数被忽略），内容却在弹动画，
+        // 两者质感对不上就显得生硬。这里让窗口边框也走同一条缓动曲线。
+        guard animated else {
+            window.setFrame(targetFrame, display: true)
+            return
+        }
+
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.26
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            context.allowsImplicitAnimation = true
+            window.animator().setFrame(targetFrame, display: true)
+        }
     }
 
     private func shouldAnimateResize(for newSize: CGSize) -> Bool {
