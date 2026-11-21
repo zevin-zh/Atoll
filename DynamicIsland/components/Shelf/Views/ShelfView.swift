@@ -186,8 +186,8 @@ struct ShelfView: View {
                         .fontWeight(.medium)
                 }
             } else {
-                ScrollView(.horizontal) {
-                    HStack(spacing: spacing) {
+                ScrollView(.vertical) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 70), spacing: spacing)], spacing: spacing) {
                         ForEach(tvm.items) { item in
                             ShelfItemView(item: item)
                                 .environmentObject(quickLookService)
