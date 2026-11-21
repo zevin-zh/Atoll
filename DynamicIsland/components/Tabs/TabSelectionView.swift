@@ -120,21 +120,20 @@ struct TabSelectionView: View {
                     if tab.view == .extensionExperience {
                         coordinator.selectedExtensionExperienceID = tab.experienceID
                     }
-                    coordinator.currentView = tab.view
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                        coordinator.currentView = tab.view
+                    }
                 }
                 .frame(height: 26)
                 .foregroundStyle(isSelected ? activeAccent : .gray)
                 .background {
+                    // 只让选中项持有这个胶囊：同一 id 出现多个视图时，
+                    // matchedGeometryEffect 的插值起点会跳到错误位置。
                     if isSelected {
                         Capsule()
                             .fill((tab.accentColor ?? Color(nsColor: .secondarySystemFill)).opacity(0.25))
                             .shadow(color: (tab.accentColor ?? .clear).opacity(0.4), radius: 8)
                             .matchedGeometryEffect(id: "capsule", in: animation)
-                    } else {
-                        Capsule()
-                            .fill(Color.clear)
-                            .matchedGeometryEffect(id: "capsule", in: animation)
-                            .hidden()
                     }
                 }
 

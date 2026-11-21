@@ -2421,10 +2421,19 @@ struct ContentView: View {
         return true
     }
 
-    /// 指针是否真的落在灵动岛上（用窗口真实位置判定，只留 4pt 容差）。
+    /// 指针是否落在"看得见的岛"上：用收起态的刘海尺寸算，不用窗口边框
+    /// （窗口带透明边距和阴影，比实际可见区域大一圈）。
     private func isPointerNearNotchRegion() -> Bool {
-        guard let frame = NotchBridge.shared.window?.frame else { return false }
-        return frame.insetBy(dx: -4, dy: -4).contains(NSEvent.mouseLocation)
+        guard let screen = NSScreen.screens.first(where: { $0.safeAreaInsets.top > 0 }) ?? NSScreen.main else {
+            return false
+        }
+        let width = max(vm.closedNotchSize.width, 120)
+        let height = max(vm.closedNotchSize.height, 24)
+        let rect = NSRect(x: screen.frame.midX - width / 2,
+                          y: screen.frame.maxY - height,
+                          width: width,
+                          height: height)
+        return rect.insetBy(dx: -4, dy: -4).contains(NSEvent.mouseLocation)
     }
 
     /// 100ms 位置轮询：直接按鼠标坐标判断是否在刘海上，绕开 onHover 的抖动。
