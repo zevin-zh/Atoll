@@ -48,7 +48,8 @@ struct DynamicNotchApp: App {
     }
 
     var body: some Scene {
-        MenuBarExtra("Z-island", systemImage: "mountain.2.fill", isInserted: $showMenuBarIcon) {
+        MenuBarExtra(isInserted: $showMenuBarIcon) {
+
             LaunchAtLoginToggle()
             GrantAllPermissionsButton()
             Divider()
@@ -74,6 +75,9 @@ struct DynamicNotchApp: App {
                 NSApplication.shared.terminate(self)
             }
             .keyboardShortcut(KeyEquivalent("Q"), modifiers: .command)
+        } label: {
+            // 自定义菜单栏图标：刘海岛剪影（template image，跟随菜单栏明暗）
+            Image(nsImage: MenuBarGlyph.image)
         }
     }
 }
