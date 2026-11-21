@@ -69,7 +69,7 @@ struct TabSelectionView: View {
 
         // 简约模式：只保留暂存架 + 剪贴板。
         if Defaults[.enableMinimalisticUI] {
-            if Defaults[.enableNotes] || (Defaults[.enableClipboardManager] && Defaults[.clipboardDisplayMode] == .separateTab) {
+            if Defaults[.enableClipboardManager] && Defaults[.clipboardDisplayMode] == .separateTab {
                 tabsArray.append(TabModel(label: "Clipboard", icon: "doc.on.clipboard", view: .clipboard))
             }
             return tabsArray
@@ -80,10 +80,8 @@ struct TabSelectionView: View {
         }
 
 
-        if Defaults[.enableNotes] || (Defaults[.enableClipboardManager] && Defaults[.clipboardDisplayMode] == .separateTab) {
-            let label = Defaults[.enableNotes] ? "Notes" : "Clipboard"
-            let icon = Defaults[.enableNotes] ? "note.text" : "doc.on.clipboard"
-            tabsArray.append(TabModel(label: label, icon: icon, view: .notes))
+        if Defaults[.enableClipboardManager] && Defaults[.clipboardDisplayMode] == .separateTab {
+            tabsArray.append(TabModel(label: "Clipboard", icon: "doc.on.clipboard", view: .clipboard))
         }
         if extensionTabsEnabled {
             for payload in extensionTabPayloads {

@@ -276,7 +276,6 @@ struct ContentView: View {
         var order: [NotchViews] = []
         if Defaults[.dynamicShelf] { order.append(.shelf) }
         if enableTimerFeature && timerDisplayMode == .tab { order.append(.timer) }
-        if Defaults[.enableNotes] { order.append(.notes) }
         // 剪贴板是独立的一页，必须单独加入，否则点它会因为查不到下标而回到第一页。
         if Defaults[.enableClipboardManager] && Defaults[.clipboardDisplayMode] == .separateTab {
             order.append(.clipboard)
@@ -333,10 +332,6 @@ struct ContentView: View {
                 .frame(height: dynamicNotchSize.height)
         case .timer:
             NotchTimerView()
-        case .notes:
-            // 固定高度：内容为空时也不会把岛背景带走。
-            NotchNotesView()
-                .frame(height: dynamicNotchSize.height)
         case .clipboard:
             NotchClipboardView()
                 // 与暂存架页一致：用 dynamicNotchSize（窗口同源），保证两页大小一致。
@@ -1308,8 +1303,6 @@ struct ContentView: View {
                               NotchShelfView()
                           case .timer:
                               NotchTimerView()
-                          case .notes:
-                              NotchNotesView()
                           case .clipboard:
                               NotchClipboardView()
                           case .extensionExperience:

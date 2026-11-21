@@ -123,9 +123,9 @@ class DynamicIslandViewModel: NSObject, ObservableObject {
         guard Defaults[.clipboardDisplayMode] == .separateTab else { return }
         guard let lastCopyDate = ClipboardManager.shared.lastCopiedItemDate else { return }
         guard Date().timeIntervalSince(lastCopyDate) <= clipboardFocusWindow else { return }
-        guard coordinator.currentView != .notes else { return }
+        guard coordinator.currentView != .clipboard else { return }
         withAnimation(.smooth) {
-            coordinator.currentView = .notes
+            coordinator.currentView = .clipboard
         }
     }
     
@@ -220,27 +220,6 @@ class DynamicIslandViewModel: NSObject, ObservableObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] _, _ in
                 self?.handleMinimalisticTimerHeightChange()
-            }
-            .store(in: &cancellables)
-
-        coordinator.$notesLayoutState
-            .removeDuplicates()
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                guard let self else { return }
-                guard self.notchState == .open else { return }
-                let updatedTarget = self.calculateDynamicNotchSize()
-                guard self.notchSize != updatedTarget else { return }
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    self.notchSize = updatedTarget
-                }
-                if let delegate = AppDelegate.shared {
-                    delegate.ensureWindowSize(
-                        addShadowPadding(to: updatedTarget, isMinimalistic: Defaults[.enableMinimalisticUI]),
-                        animated: true,
-                        force: false
-                    )
-                }
             }
             .store(in: &cancellables)
 

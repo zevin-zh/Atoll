@@ -842,13 +842,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
 
-        coordinator.$notesLayoutState
-            .removeDuplicates()
-            .sink { [weak self] _ in
-                self?.updateWindowSizeIfNeeded()
-            }
-            .store(in: &cancellables)
-        
         Defaults.publisher(.openNotchWidth, options: []).sink { [weak self] _ in
             self?.debouncedUpdateWindowSize()
         }.store(in: &cancellables)
@@ -1396,12 +1389,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             case .separateTab:
                 if vm.notchState == .closed {
                     vm.open()
-                    coordinator.currentView = .notes
+                    coordinator.currentView = .clipboard
                 } else {
-                    if coordinator.currentView == .notes {
+                    if coordinator.currentView == .clipboard {
                         vm.close()
                     } else {
-                        coordinator.currentView = .notes
+                        coordinator.currentView = .clipboard
                     }
                 }
             case .notchTab:
