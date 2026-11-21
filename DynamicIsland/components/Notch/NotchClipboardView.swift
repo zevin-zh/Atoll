@@ -196,9 +196,6 @@ struct NotchClipboardView: View {
             Text("No copies yet")
                 .font(.headline)
                 .foregroundStyle(.secondary)
-            Text("Copy something to see it here")
-                .font(.caption)
-                .foregroundStyle(.secondary.opacity(0.7))
         }
         // 空状态必须撑住高度：内容为 0 时岛背景会跟着塌成一团甚至消失。
         .frame(maxWidth: .infinity, minHeight: 140, maxHeight: .infinity)
