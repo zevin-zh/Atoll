@@ -1876,10 +1876,34 @@ final class NotchFileDropCatcher: NSView {
         return (info.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: options) as? [URL]) ?? []
     }
 
+    /// 收起时的命中框；拖拽开始后临时铺满整个面板。
+    private var collapsedFrame: NSRect = .zero
+    private var isExpandedForDrag = false
+
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
         guard !fileURLs(sender).isEmpty else { return [] }
+        expandForDragIfNeeded()
         enterDragSession()
         return .copy
+    }
+
+    /// 岛一展开，可拖放区域就比刘海大得多；接收器必须同步铺满整个面板，
+    /// 否则指针往下走会落到 SwiftUI 自己的区域，于是弹出主页面而不是暂存架。
+    private func expandForDragIfNeeded() {
+        guard !isExpandedForDrag, let superview else { return }
+        collapsedFrame = frame
+        isExpandedForDrag = true
+        autoresizingMask = [.width, .height]
+        frame = superview.bounds
+    }
+
+    private func collapseAfterDrag() {
+        guard isExpandedForDrag else { return }
+        isExpandedForDrag = false
+        autoresizingMask = [.minXMargin, .maxXMargin, .minYMargin]
+        if collapsedFrame != .zero {
+            frame = collapsedFrame
+        }
     }
 
     private func enterDragSession() {
@@ -1900,6 +1924,7 @@ final class NotchFileDropCatcher: NSView {
 
     private func endDragSession() {
         NotchBridge.shared.isFileDragActive = false
+        collapseAfterDrag()
     }
 
     override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
