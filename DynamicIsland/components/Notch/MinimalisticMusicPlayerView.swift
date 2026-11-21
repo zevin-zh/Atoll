@@ -830,8 +830,6 @@ private struct MinimalisticReminderDetailsView: View {
         guard vm.notchState == .open else { return false }
         guard coordinator.sneakPeek.show else { return false }
         guard Defaults[.enableSystemHUD] else { return false }
-        guard !Defaults[.enableCustomOSD] && !Defaults[.enableVerticalHUD] && !Defaults[.enableCircularHUD] else { return false }
-
         switch coordinator.sneakPeek.type {
         case .volume:
             return Defaults[.enableVolumeHUD]

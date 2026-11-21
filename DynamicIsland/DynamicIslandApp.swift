@@ -210,10 +210,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NotificationCenter.default.removeObserver(self)
         extensionXPCServiceHost.stop()
         extensionRPCServer.stop()
-        networkConnectivityManager.stopMonitoring()
-        // Restore Lunar's native OSD if integration was active
-        LunarManager.shared.appWillTerminate()
-    }
+        networkConnectivityManager.stopMonitoring()    }
     
     @objc func onScreenLocked(_: Notification) {
         print("Screen locked")
@@ -633,22 +630,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         Defaults.Keys.migrateMusicAuxControls()
         Defaults.Keys.migrateMusicControlSlots()
         Defaults.Keys.migrateCapsLockTintMode()
-        Defaults.Keys.migrateThirdPartyDDCIntegration()
         Defaults.Keys.migrateClipboardShortcutToV()
-
-        Defaults.publisher(.enableThirdPartyDDCIntegration, options: [])
-            .receive(on: DispatchQueue.main)
-            .sink { _ in
-                Defaults.Keys.syncLegacyThirdPartyDDCKeys()
-            }
-            .store(in: &cancellables)
-
-        Defaults.publisher(.thirdPartyDDCProvider, options: [])
-            .receive(on: DispatchQueue.main)
-            .sink { _ in
-                Defaults.Keys.syncLegacyThirdPartyDDCKeys()
-            }
-            .store(in: &cancellables)
         
         // Initialize idle animations (load bundled + built-in face)
         idleAnimationManager.initializeDefaultAnimations()
@@ -665,12 +647,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // Setup SystemHUD Manager
         SystemHUDManager.shared.setup(coordinator: coordinator)
-
-        // Setup BetterDisplay integration
-        BetterDisplayManager.shared.configure(coordinator: coordinator)
-
-        // Setup Lunar integration
-        LunarManager.shared.configure(coordinator: coordinator)
         
         // Honour "Save History Across Restarts" before anything can read the
         // stored history back.

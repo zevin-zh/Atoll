@@ -36,9 +36,6 @@ import UIKit
 
 @MainActor
 struct ContentView: View {
-    @Default(.pinnedLyricContext) private var pinnedLyricContext
-    @Default(.pinLyricsWhenClosed) private var pinLyricsWhenClosed
-    @Default(.enableLyrics) private var enableLyrics
     @EnvironmentObject var vm: DynamicIslandViewModel
     @EnvironmentObject var webcamManager: WebcamManager
 
@@ -1285,8 +1282,6 @@ struct ContentView: View {
                           .onChange(of: geo.size.width) { _, width in closedContentWidth = width }
                   }
               }
-              .pinnedLyrics(isVisible: pinnedLyricsVisible,
-                  isContentHidden: isSneakPeekVisibleOnCurrentScreen || isConnectivityHUDVisible)
               // A connectivity HUD must remain centred on the physical notch:
               // its middle transparent lane is what keeps both wings visible.
               // Menu-bar clearance would shift that lane underneath the camera
@@ -2474,8 +2469,6 @@ struct ContentView: View {
             effectiveClosedNotchHeight: vm.effectiveClosedNotchHeight
         )
         let height = max(closedHeight, recordingSize?.height ?? 0) + 6
-            + PinnedLyricsView.reservedHeight(isEligible: pinnedLyricsVisible,
-                availability: musicManager.lyricsAvailability, context: pinnedLyricContext)
         let width = max(closedWidth, recordingSize?.width ?? 0) + 24
         // Same shift the content is drawn with, so the hit area stays under it.
         let minX = screen.frame.midX - width / 2 + menuBarClearanceOffset
@@ -2504,17 +2497,6 @@ struct ContentView: View {
             && point.y >= frame.minY && point.y <= frame.maxY
     }
     
-    /// Track-level reservation. A sneak peek hides only the overlaid words.
-    private var pinnedLyricsVisible: Bool {
-        PinnedLyricsView.shouldReserve(
-            lyricsEnabled: enableLyrics,
-            pinEnabled: pinLyricsWhenClosed,
-            surfaceEligible: vm.notchState == .closed && !vm.hideOnClosed
-                && !lockScreenManager.isLocked && musicManager.isPlaying,
-            availability: musicManager.lyricsAvailability
-        )
-    }
-
     // Helper function to check if any popovers are active
     private func hasAnyActivePopovers() -> Bool {
      return vm.isBatteryPopoverActive || 

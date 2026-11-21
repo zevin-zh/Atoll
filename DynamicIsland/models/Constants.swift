@@ -330,30 +330,6 @@ enum ClipboardDisplayMode: String, CaseIterable, Codable, Defaults.Serializable 
     }
 }
 
-enum ThirdPartyDDCProvider: String, CaseIterable, Codable, Defaults.Serializable, Identifiable {
-    case betterDisplay
-    case lunar
-
-    var id: String { rawValue }
-
-    var displayName: String {
-        switch self {
-        case .betterDisplay:
-            return "BetterDisplay"
-        case .lunar:
-            return "Lunar"
-        }
-    }
-    
-    /// Bundle identifiers to try when looking up the app icon.
-    var bundleIdentifiers: [String] {
-        switch self {
-        case .betterDisplay: return ["pro.betterdisplay.BetterDisplay"]
-        case .lunar: return ["fyi.lunar.Lunar"]
-        }
-    }
-}
-
 enum HideNotchOption: String, Defaults.Serializable {
     case always
     case nowPlayingOnly
@@ -367,20 +343,6 @@ extension Notification.Name {
 
 // Media controller types for selection in settings
 /// How the line being sung is picked out from the rest.
-enum PinnedLyricContext: Int, CaseIterable, Identifiable, Defaults.Serializable {
-    case current = 1
-    case three = 3
-    case five = 5
-
-    var id: Int { rawValue }
-    var localizedName: String {
-        switch self {
-        case .current: return String(localized: "Current")
-        case .three: return String(localized: "3 lines")
-        case .five: return String(localized: "5 lines")
-        }
-    }
-}
 
 enum LyricHighlightStyle: String, CaseIterable, Identifiable, Defaults.Serializable {
     case sweep = "Sweep"
@@ -1093,58 +1055,15 @@ extension Defaults.Keys {
     static let brightnessFineStepPercent = Key<Int>("brightnessFineStepPercent", default: 2)
     
     // MARK: Custom OSD Window Feature
-    static let enableCustomOSD = Key<Bool>("enableCustomOSD", default: false)
-    static let enableVerticalHUD = Key<Bool>("enableVerticalHUD", default: false)
-    static let enableCircularHUD = Key<Bool>("enableCircularHUD", default: false)
-    static let verticalHUDPosition = Key<String>("verticalHUDPosition", default: "right") // "left" or "right"
     
     // Vertical HUD Customization
-    static let verticalHUDShowValue = Key<Bool>("verticalHUDShowValue", default: true)
-    static let verticalHUDInteractive = Key<Bool>("verticalHUDInteractive", default: true)
-    static let verticalHUDHeight = Key<CGFloat>("verticalHUDHeight", default: 160)
-    static let verticalHUDWidth = Key<CGFloat>("verticalHUDWidth", default: 36)
-    static let verticalHUDPadding = Key<CGFloat>("verticalHUDPadding", default: 24)
-    static let verticalHUDUseAccentColor = Key<Bool>("verticalHUDUseAccentColor", default: false)
-    static let verticalHUDMaterial = Key<OSDMaterial>("verticalHUDMaterial", default: .frosted)
-    static let verticalHUDLiquidGlassCustomizationMode = Key<LockScreenGlassCustomizationMode>(
-        "verticalHUDLiquidGlassCustomizationMode",
-        default: .standard
-    )
-    static let verticalHUDLiquidGlassVariant = Key<LiquidGlassVariant>(
-        "verticalHUDLiquidGlassVariant",
-        default: .defaultVariant
-    )
     
     // Circular HUD Customization
-    static let circularHUDShowValue = Key<Bool>("circularHUDShowValue", default: true)
-    static let circularHUDSize = Key<CGFloat>("circularHUDSize", default: 65)
-    static let circularHUDStrokeWidth = Key<CGFloat>("circularHUDStrokeWidth", default: 4)
-    static let circularHUDUseAccentColor = Key<Bool>("circularHUDUseAccentColor", default: true)
 
     // MARK: Third-Party DDC Integration
-    static let enableThirdPartyDDCIntegration = Key<Bool>("enableThirdPartyDDCIntegration", default: false)
-    static let thirdPartyDDCProvider = Key<ThirdPartyDDCProvider>("thirdPartyDDCProvider", default: .betterDisplay)
-    static let enableExternalVolumeControlListener = Key<Bool>("enableExternalVolumeControlListener", default: false)
-    static let didMigrateThirdPartyDDCIntegration = Key<Bool>("didMigrateThirdPartyDDCIntegration", default: false)
 
     // Legacy keys retained for migration/backward compatibility
-    static let enableBetterDisplayIntegration = Key<Bool>("enableBetterDisplayIntegration", default: false)
-    static let enableLunarIntegration = Key<Bool>("enableLunarIntegration", default: false)
     
-    static let hasSeenOSDAlphaWarning = Key<Bool>("hasSeenOSDAlphaWarning", default: false)
-    static let enableOSDVolume = Key<Bool>("enableOSDVolume", default: true)
-    static let enableOSDBrightness = Key<Bool>("enableOSDBrightness", default: true)
-    static let enableOSDKeyboardBacklight = Key<Bool>("enableOSDKeyboardBacklight", default: true)
-    static let osdMaterial = Key<OSDMaterial>("osdMaterial", default: .frosted)
-    static let osdLiquidGlassCustomizationMode = Key<LockScreenGlassCustomizationMode>(
-        "osdLiquidGlassCustomizationMode",
-        default: .standard
-    )
-    static let osdLiquidGlassVariant = Key<LiquidGlassVariant>(
-        "osdLiquidGlassVariant",
-        default: .defaultVariant
-    )
-    static let osdIconColorStyle = Key<OSDIconColorStyle>("osdIconColorStyle", default: .white)
     
     // MARK: Screen Recording Detection Feature
     static let enableScreenRecordingDetection = Key<Bool>("enableScreenRecordingDetection", default: true)
@@ -1190,7 +1109,6 @@ extension Defaults.Keys {
     /// Whether the sung line is swept or simply lit.
     static let lyricHighlightStyle = Key<LyricHighlightStyle>("lyricHighlightStyle", default: .sweep)
     /// Keeps the current line under the closed notch after the panel is gone.
-    static let pinnedLyricContext = Key<PinnedLyricContext>("pinnedLyricContext", default: .current)
     static let pinLyricsWhenClosed = Key<Bool>("pinLyricsWhenClosed", default: false)
     static let lyricsPanelWidth = Key<CGFloat>("lyricsPanelWidth", default: 280)
     static let lyricsPanelOffset = Key<CGFloat>("lyricsPanelOffset", default: 0)
@@ -1280,29 +1198,6 @@ extension Defaults.Keys {
 
         Defaults[.musicControlSlots] = baseLayout.normalized(allowingMediaOutput: allowMediaOutput)
         Defaults[.didMigrateMusicControlSlots] = true
-    }
-
-    static func migrateThirdPartyDDCIntegration() {
-        if Defaults[.didMigrateThirdPartyDDCIntegration] == false {
-            let legacyBetterDisplayEnabled = Defaults[.enableBetterDisplayIntegration]
-            let legacyLunarEnabled = Defaults[.enableLunarIntegration]
-
-            if legacyBetterDisplayEnabled || legacyLunarEnabled {
-                Defaults[.enableThirdPartyDDCIntegration] = true
-                Defaults[.thirdPartyDDCProvider] = (legacyLunarEnabled && !legacyBetterDisplayEnabled) ? .lunar : .betterDisplay
-            }
-
-            Defaults[.didMigrateThirdPartyDDCIntegration] = true
-        }
-
-        syncLegacyThirdPartyDDCKeys()
-    }
-
-    static func syncLegacyThirdPartyDDCKeys() {
-        let isIntegrationEnabled = Defaults[.enableThirdPartyDDCIntegration]
-        let selectedProvider = Defaults[.thirdPartyDDCProvider]
-        Defaults[.enableBetterDisplayIntegration] = isIntegrationEnabled && selectedProvider == .betterDisplay
-        Defaults[.enableLunarIntegration] = isIntegrationEnabled && selectedProvider == .lunar
     }
 
     private static func normalizeMusicAuxControls() {

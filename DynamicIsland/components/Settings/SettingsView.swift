@@ -1794,606 +1794,82 @@ final class HUDPreviewViewModel: ObservableObject {
 /// A modifier rather than a computed property per view: it carries the
 /// observation of both providers with it, so a control re-enables the moment the
 /// provider quits without every settings view having to observe them itself.
-private struct ExternalKeyOwnershipModifier: ViewModifier {
-    @Default(.enableThirdPartyDDCIntegration) private var integrationEnabled
-    @Default(.thirdPartyDDCProvider) private var provider
-    @ObservedObject private var betterDisplayManager = BetterDisplayManager.shared
-    @ObservedObject private var lunarManager = LunarManager.shared
-
-    let message: String
-
-    private var providerRunning: Bool {
-        switch provider {
-        case .betterDisplay: return betterDisplayManager.isRunning
-        case .lunar: return lunarManager.isRunning
-        }
-    }
-
-    private var externalOwnsKeys: Bool {
-        integrationEnabled && providerRunning
-    }
-
-    func body(content: Content) -> some View {
-        content
-            .disabled(externalOwnsKeys)
-            .help(externalOwnsKeys ? message : "")
-    }
-}
-
-extension View {
-    /// Greys this control out while the running external display app owns the
-    /// keys it configures.
-    func disabledWhileExternalAppOwnsKeys(_ message: String) -> some View {
-        modifier(ExternalKeyOwnershipModifier(message: message))
-    }
-}
-
 private struct HUDAndOSDSettingsView: View {
-    @State private var selectedTab: Tab = {
-        if Defaults[.enableSystemHUD] { return .hud }
-        if Defaults[.enableCustomOSD] { return .osd }
-        if Defaults[.enableVerticalHUD] { return .vertical }
-        if Defaults[.enableCircularHUD] { return .circular }
-        return .hud
-    }()
     @Default(.enableSystemHUD) var enableSystemHUD
-    @Default(.enableCustomOSD) var enableCustomOSD
-    @Default(.enableVerticalHUD) var enableVerticalHUD
-    @Default(.enableCircularHUD) var enableCircularHUD
-    @Default(.verticalHUDPosition) var verticalHUDPosition
     @Default(.enableVolumeHUD) var enableVolumeHUD
     @Default(.enableBrightnessHUD) var enableBrightnessHUD
     @Default(.enableKeyboardBacklightHUD) var enableKeyboardBacklightHUD
-    @Default(.enableThirdPartyDDCIntegration) var enableThirdPartyDDCIntegration
-    @Default(.verticalHUDShowValue) var verticalHUDShowValue
-    @Default(.verticalHUDInteractive) var verticalHUDInteractive
-    @Default(.verticalHUDHeight) var verticalHUDHeight
-    @Default(.verticalHUDWidth) var verticalHUDWidth
-    @Default(.verticalHUDPadding) var verticalHUDPadding
-    @Default(.verticalHUDUseAccentColor) var verticalHUDUseAccentColor
-    @Default(.verticalHUDMaterial) var verticalHUDMaterial
-    @Default(.verticalHUDLiquidGlassCustomizationMode) var verticalHUDLiquidGlassCustomizationMode
-    @Default(.verticalHUDLiquidGlassVariant) var verticalHUDLiquidGlassVariant
-
-    // Circular HUD Props
-    @Default(.circularHUDShowValue) var circularHUDShowValue
-    @Default(.circularHUDSize) var circularHUDSize
-    @Default(.circularHUDStrokeWidth) var circularHUDStrokeWidth
-    @Default(.circularHUDUseAccentColor) var circularHUDUseAccentColor
     @StateObject private var previewModel = HUDPreviewViewModel()
     @ObservedObject private var accessibilityPermission = AccessibilityPermissionStore.shared
-
-    private enum Tab: String, CaseIterable, Identifiable {
-        case hud = "Dynamic Island HUD"
-        case osd = "Custom OSD"
-        case vertical = "Vertical Bar"
-        case circular = "Circular"
-
-        var id: String { rawValue }
-    }
 
     private var paneBackgroundColor: Color {
         Color(nsColor: .controlBackgroundColor)
     }
 
-    private var liquidVariantRange: ClosedRange<Double> {
-        Double(LiquidGlassVariant.supportedRange.lowerBound)...Double(LiquidGlassVariant.supportedRange.upperBound)
-    }
-
-    private var availableVerticalMaterials: [OSDMaterial] {
-        if #available(macOS 26.0, *) {
-            return OSDMaterial.allCases
-        }
-        return OSDMaterial.allCases.filter { $0 != .liquid }
-    }
-
-    private var verticalLiquidVariantBinding: Binding<Double> {
-        Binding(
-            get: { Double(verticalHUDLiquidGlassVariant.rawValue) },
-            set: { newValue in
-                let raw = Int(newValue.rounded())
-                verticalHUDLiquidGlassVariant = LiquidGlassVariant.clamped(raw)
-            }
-        )
-    }
-
     private var hudVariantCards: some View {
-            HStack(spacing: 16) {
-                HUDSelectionCard(
-                    title: String(localized: "Dynamic Island"),
-                    isSelected: selectedTab == .hud,
-                    action: {
-                        selectedTab = .hud
-                        enableSystemHUD = true
-                        enableCustomOSD = false
-                        enableVerticalHUD = false
-                        enableCircularHUD = false
-                    }
-                ) {
-                    VStack {
-                        Capsule()
-                            .fill(Color.black)
-                            .frame(width: 64, height: 20)
-                            .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
-                            .overlay {
-                                HStack(spacing: 6) {
-                                    Image(systemName: previewModel.iconName)
-                                        .font(.system(size: 9, weight: .semibold))
-                                        .foregroundStyle(.white)
-                                        .frame(width: 12)
-
-                                    GeometryReader { geo in
-                                        Capsule()
-                                            .fill(Color.white.opacity(0.2))
-                                            .overlay(alignment: .leading) {
-                                                Capsule()
-                                                    .fill(Color.white)
-                                                    .frame(width: geo.size.width * CGFloat(previewModel.level))
-                                                    .animation(.spring(response: 0.3), value: previewModel.level)
-                                            }
-                                    }
-                                    .frame(height: 4)
-                                }
-                                .padding(.horizontal, 8)
-                            }
-                    }
-                }
-
-                HUDSelectionCard(
-                    title: String(localized: "Custom OSD"),
-                    isSelected: selectedTab == .osd,
-                    action: {
-                        selectedTab = .osd
-                        enableCustomOSD = true
-                        enableSystemHUD = false
-                        enableVerticalHUD = false
-                        enableCircularHUD = false
-                    }
-                ) {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(.ultraThinMaterial)
+        HStack(spacing: 16) {
+            HUDSelectionCard(
+                title: String(localized: "Dynamic Island"),
+                isSelected: true,
+                action: { }
+            ) {
+                VStack {
+                    Capsule()
+                        .fill(Color.black)
+                        .frame(width: 64, height: 20)
+                        .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
                         .overlay {
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(.white.opacity(0.1), lineWidth: 1)
-                        }
-                        .shadow(color: .black.opacity(0.1), radius: 3, y: 1)
-                        .overlay {
-                            VStack(spacing: 6) {
+                            HStack(spacing: 6) {
                                 Image(systemName: previewModel.iconName)
-                                    .font(.system(size: 16))
-                                    .foregroundStyle(.secondary)
-                                    .symbolRenderingMode(.hierarchical)
-                                    .contentTransition(.symbolEffect(.replace))
+                                    .font(.system(size: 9, weight: .semibold))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 12)
 
                                 GeometryReader { geo in
                                     Capsule()
-                                        .fill(Color.secondary.opacity(0.2))
+                                        .fill(Color.white.opacity(0.2))
                                         .overlay(alignment: .leading) {
                                             Capsule()
-                                                .fill(Color.primary)
+                                                .fill(Color.white)
                                                 .frame(width: geo.size.width * CGFloat(previewModel.level))
                                                 .animation(.spring(response: 0.3), value: previewModel.level)
                                         }
                                 }
-                                .frame(width: 36, height: 4)
+                                .frame(height: 4)
                             }
+                            .padding(.horizontal, 8)
                         }
-                        .frame(width: 44, height: 44)
-                }
-
-                HUDSelectionCard(
-                    title: String(localized: "Vertical Bar"),
-                    isSelected: selectedTab == .vertical,
-                    action: {
-                        selectedTab = .vertical
-                        enableVerticalHUD = true
-                        enableSystemHUD = false
-                        enableCustomOSD = false
-                        enableCircularHUD = false
-                    }
-                ) {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(.ultraThinMaterial)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(.white.opacity(0.1), lineWidth: 1)
-                        }
-                        .shadow(color: .black.opacity(0.1), radius: 3, y: 1)
-                        .overlay {
-                            VStack {
-                                GeometryReader { geo in
-                                    VStack {
-                                        Spacer()
-                                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                            .fill(Color.white)
-                                            .frame(height: max(0, geo.size.height * CGFloat(previewModel.level)))
-                                            .animation(.spring(response: 0.3), value: previewModel.level)
-                                    }
-                                }
-                                .mask(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                                .padding(.bottom, 2)
-
-                                Image(systemName: previewModel.iconName)
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(previewModel.level > 0.15 ? .black : .secondary)
-                                    .symbolRenderingMode(.hierarchical)
-                                    .contentTransition(.symbolEffect(.replace))
-                            }
-                            .padding(4)
-                        }
-                        .frame(width: 22, height: 54)
-                }
-
-                HUDSelectionCard(
-                    title: String(localized: "Circular"),
-                    isSelected: selectedTab == .circular,
-                    action: {
-                        selectedTab = .circular
-                        enableCircularHUD = true
-                        enableSystemHUD = false
-                        enableCustomOSD = false
-                        enableVerticalHUD = false
-                    }
-                ) {
-                    ZStack {
-                        Circle()
-                            .stroke(Color.secondary.opacity(0.2), lineWidth: 4)
-                        Circle()
-                            .trim(from: 0, to: CGFloat(previewModel.level))
-                            .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                            .rotationEffect(.degrees(-90))
-                            .animation(.spring(response: 0.3), value: previewModel.level)
-                        Image(systemName: previewModel.iconName)
-                            .font(.system(size: 16))
-                            .foregroundStyle(.primary)
-                            .symbolRenderingMode(.hierarchical)
-                            .contentTransition(.symbolEffect(.replace))
-                    }
-                    .frame(width: 44, height: 44)
                 }
             }
+        }
     }
 
     var body: some View {
         Form {
             Section {
-                // Four fixed-width cards ask for about 490pt. In a grouped
-                // Form that is a hard minimum, so on a narrower window the
-                // whole settings pane was pushed wider to satisfy it and the
-                // content overflowed sideways. It scrolls instead when it
-                // does not fit, and lays out as a row whenever it does.
-                ViewThatFits(in: .horizontal) {
-                    hudVariantCards
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        hudVariantCards
-                    }
-                }
-                .padding(.top, 8)
+                hudVariantCards
+                    .padding(.top, 8)
             }
 
-            switch selectedTab {
-            case .hud:
-                HUD()
-            case .osd:
-                if #available(macOS 15.0, *) {
-                    CustomOSDSettings()
-                } else {
-                    VStack(spacing: 16) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 48))
-                            .foregroundStyle(.orange)
+            HUD()
 
-                        Text("macOS 15 or later required")
-                            .font(.headline)
-
-                        Text("Custom OSD feature requires macOS 15 or later.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding()
-                }
-            case .vertical:
-                Group {
-                    if !accessibilityPermission.isAuthorized && !enableThirdPartyDDCIntegration {
-                        Section {
-                            SettingsPermissionCallout(
-                                message: "Accessibility permission is needed to intercept system controls for the Vertical HUD.",
-                                requestAction: {
-                                    accessibilityPermission.requestAuthorizationPrompt()
-                                },
-                                openSettingsAction: {
-                                    accessibilityPermission.openSystemSettings()
-                                }
-                            )
-                        } header: {
-                            Text("Accessibility")
-                        }
-                    }
-
-                    if accessibilityPermission.isAuthorized || enableThirdPartyDDCIntegration {
-                        Section {
-                            Toggle("Volume HUD", isOn: $enableVolumeHUD)
-                            Toggle("Brightness HUD", isOn: $enableBrightnessHUD)
-                            Toggle("Keyboard Backlight HUD", isOn: $enableKeyboardBacklightHUD)
-                                .disabledWhileExternalAppOwnsKeys("Disabled while the external display app is running \u{2014} that app owns the keyboard backlight keys.")
-                        } header: {
-                            Text("Controls")
-                        } footer: {
-                            Text("Choose which system controls should display HUD notifications.")
-                                .foregroundStyle(.secondary)
-                                .font(.caption)
-                        }
-                    }
-
-                    Section {
-                        Toggle("Show Percentage", isOn: $verticalHUDShowValue)
-                        Toggle("Use Accent Color", isOn: $verticalHUDUseAccentColor)
-                        Toggle("Interactive (Drag to Change)", isOn: $verticalHUDInteractive)
-                        Picker("Material", selection: $verticalHUDMaterial) {
-                            ForEach(availableVerticalMaterials, id: \.self) { material in
-                                Text(material.rawValue).tag(material)
-                            }
-                        }
-
-                        if verticalHUDMaterial == .liquid {
-                            if #available(macOS 26.0, *) {
-                                SettingsSegmentedPicker(
-                                    "Glass mode",
-                                    selection: $verticalHUDLiquidGlassCustomizationMode,
-                                    items: Array(LockScreenGlassCustomizationMode.allCases)
-                                ) { $0.rawValue }
-
-                                if verticalHUDLiquidGlassCustomizationMode == .customLiquid {
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        HStack {
-                                            Text("Custom liquid variant")
-                                            Spacer()
-                                            Text("v\(verticalHUDLiquidGlassVariant.rawValue)")
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                        }
-                                        Slider(value: verticalLiquidVariantBinding, in: liquidVariantRange, step: 1)
-                                    }
-                                }
-                            } else {
-                                Text("Custom Liquid is available on macOS 26 or later.")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        Defaults.Toggle(key: .useColorCodedVolumeDisplay) {
-                            Text("Color-coded Volume")
-                        }
-                        if Defaults[.useColorCodedVolumeDisplay] {
-                            Defaults.Toggle(key: .useSmoothColorGradient) {
-                                Text("Smooth color transitions")
-                            }
-                        }
-                    } header: {
-                        Text("Behavior & Style")
-                    }
-
-                    Section {
-                        Picker("HUD Position", selection: $verticalHUDPosition) {
-                            Text("Left").tag("left")
-                            Text("Right").tag("right")
-                        }
-                        .pickerStyle(.menu)
-
-                        VStack(alignment: .leading) {
-                            Text("Screen Padding: \(Int(verticalHUDPadding))px")
-                            Slider(value: $verticalHUDPadding, in: 0...100, step: 4)
-                        }
-                    } header: {
-                        Text("Position")
-                    } footer: {
-                        Text("Choose directly on which side of the screen the vertical bar appears.")
-                            .foregroundStyle(.secondary)
-                            .font(.caption)
-                    }
-
-                    Section {
-                        VStack(alignment: .leading) {
-                            Text("Width: \(Int(verticalHUDWidth))px")
-                            Slider(value: $verticalHUDWidth, in: 24...80, step: 2)
-                        }
-                        VStack(alignment: .leading) {
-                            Text("Height: \(Int(verticalHUDHeight))px")
-                            Slider(value: $verticalHUDHeight, in: 100...500, step: 10)
-                        }
-                        Button("Reset to Default") {
-                            verticalHUDWidth = 36
-                            verticalHUDHeight = 160
-                            verticalHUDPadding = 24
-                        }
-                    } header: {
-                        Text("Dimensions")
-                    }
-                }
-
-            case .circular:
-                Group {
-                    if !accessibilityPermission.isAuthorized && !enableThirdPartyDDCIntegration {
-                        Section {
-                            SettingsPermissionCallout(
-                                message: "Accessibility permission is needed to intercept system controls for the Circular HUD.",
-                                requestAction: {
-                                    accessibilityPermission.requestAuthorizationPrompt()
-                                },
-                                openSettingsAction: {
-                                    accessibilityPermission.openSystemSettings()
-                                }
-                            )
-                        } header: {
-                            Text("Accessibility")
-                        }
-                    }
-
-                    if accessibilityPermission.isAuthorized || enableThirdPartyDDCIntegration {
-                        Section {
-                            Toggle("Volume HUD", isOn: $enableVolumeHUD)
-                            Toggle("Brightness HUD", isOn: $enableBrightnessHUD)
-                            Toggle("Keyboard Backlight HUD", isOn: $enableKeyboardBacklightHUD)
-                                .disabledWhileExternalAppOwnsKeys("Disabled while the external display app is running \u{2014} that app owns the keyboard backlight keys.")
-                        } header: {
-                            Text("Controls")
-                        } footer: {
-                            Text("Choose which system controls should display HUD notifications.")
-                                .foregroundStyle(.secondary)
-                                .font(.caption)
-                        }
-                    }
-
-                    Section {
-                        Toggle("Show Percentage", isOn: $circularHUDShowValue)
-                        Toggle("Use Accent Color", isOn: $circularHUDUseAccentColor)
-                        Defaults.Toggle(key: .useColorCodedVolumeDisplay) {
-                            Text("Color-coded Volume")
-                        }
-                        if Defaults[.useColorCodedVolumeDisplay] {
-                            Defaults.Toggle(key: .useSmoothColorGradient) {
-                                Text("Smooth color transitions")
-                            }
-                        }
-                    } header: {
-                        Text("Style")
-                    }
-
-                    Section {
-                        VStack(alignment: .leading) {
-                            Text("Size: \(Int(circularHUDSize))px")
-                            Slider(value: $circularHUDSize, in: 40...200, step: 5)
-                        }
-                        VStack(alignment: .leading) {
-                            Text("Line Width: \(Int(circularHUDStrokeWidth))px")
-                            Slider(value: $circularHUDStrokeWidth, in: 2...16, step: 1)
-                        }
-                        Button("Reset to Default") {
-                            circularHUDSize = 65
-                            circularHUDStrokeWidth = 4
-                        }
-                    } header: {
-                        Text("Dimensions")
-                    }
-                }
-            }
-
-            // Third-party display integrations (shared across all HUD variants)
-            ExternalDisplayIntegrationsSection()
+            StepSizeSection()
         }
         .navigationTitle("Controls")
-        .onAppear {
-            if #unavailable(macOS 26.0), verticalHUDMaterial == .liquid {
-                verticalHUDMaterial = .frosted
-                verticalHUDLiquidGlassCustomizationMode = .standard
-            }
-        }
     }
 }
-
 // MARK: - External Display Integrations Settings Section
 
-private struct ExternalDisplayIntegrationsSection: View {
-    @Default(.enableThirdPartyDDCIntegration) var enableThirdPartyDDCIntegration
-    @Default(.thirdPartyDDCProvider) var thirdPartyDDCProvider
-    @Default(.enableExternalVolumeControlListener) var enableExternalVolumeControlListener
+// MARK: - Step Size Settings Section
+
+private struct StepSizeSection: View {
     @Default(.volumeStepPercent) var volumeStepPercent
     @Default(.volumeFineStepPercent) var volumeFineStepPercent
     @Default(.brightnessStepPercent) var brightnessStepPercent
     @Default(.brightnessFineStepPercent) var brightnessFineStepPercent
-    @ObservedObject private var betterDisplayManager = BetterDisplayManager.shared
-    @ObservedObject private var lunarManager = LunarManager.shared
 
     private func highlightID(_ title: String) -> String {
         SettingsTab.hudAndOSD.highlightID(for: title)
-    }
-
-    /// Whether the selected DDC provider is actually running.
-    ///
-    /// The one place that answers this. Ownership of the keys and everything the
-    /// section says about the provider's state are read from here, so the
-    /// controls and the status beside them cannot disagree about whether the
-    /// provider is up.
-    private var ddcProviderRunning: Bool {
-        switch thirdPartyDDCProvider {
-        case .betterDisplay: return betterDisplayManager.isRunning
-        case .lunar: return lunarManager.isRunning
-        }
-    }
-
-    /// Mirrors `SystemHUDManager.resolvedControlFlags()`: ownership only transfers
-    /// while integration is enabled *and* the provider is running. When the
-    /// provider is quit, Atoll handles the keys again and the saved step sizes
-    /// apply, so the controls have to come back with it.
-    private var externalOwnsBrightness: Bool {
-        enableThirdPartyDDCIntegration && ddcProviderRunning
-    }
-
-    private var externalOwnsVolume: Bool {
-        externalOwnsBrightness && enableExternalVolumeControlListener
-    }
-
-    private var providerStatusText: String {
-        switch thirdPartyDDCProvider {
-        case .betterDisplay:
-            if ddcProviderRunning { return "Running" }
-            if betterDisplayManager.isDetected { return "Not running" }
-            return "Not detected"
-        case .lunar:
-            if lunarManager.isConnected { return "Connected" }
-            if ddcProviderRunning { return "Running" }
-            if lunarManager.isDetected { return "Not running" }
-            return "Not detected"
-        }
-    }
-
-    private var providerStatusColor: Color {
-        switch thirdPartyDDCProvider {
-        case .betterDisplay:
-            if ddcProviderRunning { return .green }
-            if betterDisplayManager.isDetected { return .orange }
-            return .secondary
-        case .lunar:
-            if lunarManager.isConnected { return .green }
-            if ddcProviderRunning { return .orange }
-            if lunarManager.isDetected { return .orange }
-            return .secondary
-        }
-    }
-
-    private var providerStatusDescription: String {
-        switch thirdPartyDDCProvider {
-        case .betterDisplay:
-            if !betterDisplayManager.isDetected {
-                return "Install [BetterDisplay](https://betterdisplay.pro) to control external display brightness (and optional volume) through Atoll's HUD."
-            }
-            if !ddcProviderRunning {
-                return "BetterDisplay is installed but not currently running. Launch BetterDisplay to enable integration."
-            }
-            return "BetterDisplay OSD events will be routed through Atoll's active HUD style. Brightness is always routed; volume is routed when external volume control listener is enabled below. Make sure BetterDisplay's OSD integration is enabled in Settings › Application › Integration."
-        case .lunar:
-            if !lunarManager.isDetected {
-                return "Install [Lunar](https://lunar.fyi) to control external display brightness, contrast, and optional volume through Atoll's HUD via DDC."
-            }
-            if !ddcProviderRunning {
-                return "Lunar is installed but not currently running. Launch Lunar to enable integration."
-            }
-            if lunarManager.isConnected {
-                return "Connected to Lunar's DDC socket. Brightness and contrast adjustments are shown through Atoll's HUD; volume follows when external volume control listener is enabled below."
-            }
-            return "Lunar is running but the socket connection is not yet established. It will connect automatically."
-        }
-    }
-
-    private func refreshDetectionStatus() {
-        switch thirdPartyDDCProvider {
-        case .betterDisplay:
-            betterDisplayManager.refreshDetectionStatus()
-        case .lunar:
-            lunarManager.refreshDetectionStatus()
-        }
     }
 
     var body: some View {
@@ -2409,8 +1885,6 @@ private struct ExternalDisplayIntegrationsSection: View {
                     }
                 }
                 .settingsHighlight(id: highlightID("Volume step"))
-                .disabled(externalOwnsVolume)
-                .help(externalOwnsVolume ? "Disabled while \"Enable external volume control listener\" is on in External Display Integrations \u{2014} that app owns the volume keys." : "")
 
                 Stepper(value: $volumeFineStepPercent, in: 1...25) {
                     HStack {
@@ -2422,14 +1896,6 @@ private struct ExternalDisplayIntegrationsSection: View {
                     }
                 }
                 .settingsHighlight(id: highlightID("Volume fine step"))
-                .disabled(externalOwnsVolume)
-                .help(externalOwnsVolume ? "Disabled while \"Enable external volume control listener\" is on in External Display Integrations \u{2014} that app owns the volume keys." : "")
-
-                if externalOwnsVolume {
-                    Text("Disabled while external display volume integration is active.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
 
                 Stepper(value: $brightnessStepPercent, in: 1...25) {
                     HStack {
@@ -2441,8 +1907,6 @@ private struct ExternalDisplayIntegrationsSection: View {
                     }
                 }
                 .settingsHighlight(id: highlightID("Brightness step"))
-                .disabled(externalOwnsBrightness)
-                .help(externalOwnsBrightness ? "Disabled while external display integration is on \u{2014} that app owns the brightness keys." : "")
 
                 Stepper(value: $brightnessFineStepPercent, in: 1...25) {
                     HStack {
@@ -2454,14 +1918,6 @@ private struct ExternalDisplayIntegrationsSection: View {
                     }
                 }
                 .settingsHighlight(id: highlightID("Brightness fine step"))
-                .disabled(externalOwnsBrightness)
-                .help(externalOwnsBrightness ? "Disabled while external display integration is on \u{2014} that app owns the brightness keys." : "")
-
-                if externalOwnsBrightness {
-                    Text("Disabled while external display brightness integration is active.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
             } header: {
                 Text("Step size")
             } footer: {
@@ -2469,73 +1925,9 @@ private struct ExternalDisplayIntegrationsSection: View {
                     .foregroundStyle(.secondary)
                     .font(.caption)
             }
-
-            Section {
-                Toggle("Enable third-party DDC app integration", isOn: $enableThirdPartyDDCIntegration)
-                    .settingsHighlight(id: highlightID("Third-party DDC app integration"))
-
-                if enableThirdPartyDDCIntegration {
-                    Picker("Provider", selection: $thirdPartyDDCProvider) {
-                        ForEach(ThirdPartyDDCProvider.allCases) { provider in
-                            HStack {
-                                AppIconImage(
-                                    bundleIdentifiers: provider.bundleIdentifiers,
-                                    symbolFallback: "display",
-                                    symbolColor: .secondary
-                                )
-                                Text(provider.displayName)
-                            }
-                            .tag(provider)
-                        }
-                    }
-                    .settingsHighlight(id: highlightID("Third-party DDC provider"))
-
-                    Toggle("Enable external volume control listener", isOn: $enableExternalVolumeControlListener)
-                        .settingsHighlight(id: highlightID("Enable external volume control listener"))
-
-                    Text(
-                        enableExternalVolumeControlListener
-                        ? "Atoll's built-in volume key interception is disabled while external volume listening is on. Volume HUD/OSD will follow \(thirdPartyDDCProvider.displayName) payloads."
-                        : "Atoll keeps native volume key interception. External provider volume payloads are ignored while this is off."
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                    HStack {
-                        Text("Status")
-                        Spacer()
-                        Text(providerStatusText)
-                            .font(.caption)
-                            .foregroundStyle(providerStatusColor)
-                    }
-
-                    Text(providerStatusDescription)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    Button {
-                        refreshDetectionStatus()
-                    } label: {
-                        Label("Refresh detection", systemImage: "arrow.clockwise")
-                            .font(.caption)
-                    }
-                    .buttonStyle(.link)
-                } else {
-                    Text("Enable to route BetterDisplay or Lunar display adjustments through Atoll's active HUD style.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            } footer: {
-                if enableThirdPartyDDCIntegration {
-                    Text("Atoll always listens to selected-provider brightness events, and listens to provider volume events only when external volume listener is enabled.")
-                        .foregroundStyle(.secondary)
-                        .font(.caption)
-                }
-            }
         }
     }
 }
-
 private struct HUDSelectionCard<Preview: View>: View {
     let title: String
     let isSelected: Bool
@@ -2692,7 +2084,6 @@ struct HUD: View {
     @Default(.enableVolumeHUD) var enableVolumeHUD
     @Default(.enableBrightnessHUD) var enableBrightnessHUD
     @Default(.enableKeyboardBacklightHUD) var enableKeyboardBacklightHUD
-    @Default(.enableThirdPartyDDCIntegration) var enableThirdPartyDDCIntegration
     @Default(.systemHUDSensitivity) var systemHUDSensitivity
     @ObservedObject var coordinator = DynamicIslandViewCoordinator.shared
     @ObservedObject private var accessibilityPermission = AccessibilityPermissionStore.shared
@@ -2711,7 +2102,7 @@ struct HUD: View {
 
     var body: some View {
         Group {
-            if !hasAccessibilityPermission && !enableThirdPartyDDCIntegration {
+            if !hasAccessibilityPermission {
                 Section {
                     SettingsPermissionCallout(
                         message: "Accessibility permission lets Dynamic Island replace the native volume, brightness, and keyboard HUDs.",
@@ -2725,12 +2116,11 @@ struct HUD: View {
 
 
 
-            if enableSystemHUD && !Defaults[.enableCustomOSD] && (hasAccessibilityPermission || enableThirdPartyDDCIntegration) {
+            if enableSystemHUD && hasAccessibilityPermission {
                 Section {
                     Toggle("Volume HUD", isOn: $enableVolumeHUD)
                     Toggle("Brightness HUD", isOn: $enableBrightnessHUD)
                     Toggle("Keyboard Backlight HUD", isOn: $enableKeyboardBacklightHUD)
-                        .disabledWhileExternalAppOwnsKeys("Disabled while the external display app is running \u{2014} that app owns the keyboard backlight keys.")
                 } header: {
                     Text("Controls")
                 } footer: {
@@ -3025,7 +2415,6 @@ struct Media: View {
     @Default(.showCalendar) private var showCalendar
     @Default(.enableLyrics) private var enableLyrics
     @Default(.pinLyricsWhenClosed) private var pinLyricsWhenClosed
-    @Default(.pinnedLyricContext) private var pinnedLyricContext
     @Default(.lyricHighlightStyle) private var lyricHighlightStyle
     @Default(.lyricsPanelWidth) private var lyricsPanelWidth
     @Default(.lyricsPanelOffset) private var lyricsPanelOffset
@@ -3246,27 +2635,6 @@ struct Media: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .settingsHighlight(id: highlightID("Lyric highlight"))
-                }
-
-                if enableLyrics && !enableMinimalisticUI && showStandardMediaControls {
-                    Defaults.Toggle(key: .pinLyricsWhenClosed) {
-                        Text("Keep lyrics under the closed notch")
-                    }
-                    .settingsHighlight(id: highlightID("Keep lyrics under the closed notch"))
-
-                    SettingsSegmentedPicker(
-                        "Pinned lyric context",
-                        selection: $pinnedLyricContext,
-                        items: Array(PinnedLyricContext.allCases)
-                    ) { $0.localizedName }
-                    .disabled(!pinLyricsWhenClosed)
-                    .settingsHighlight(id: highlightID("Pinned lyric context"))
-
-
-                    Text("Shows timed lyrics below the closed notch with the selected context. Keeps the space during instrumental breaks; hides the words while a HUD is on screen. Can also be toggled from the pin on the lyrics panel.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Text(
@@ -7914,210 +7282,6 @@ struct ClipboardSettings: View {
     }
 }
 
-
-struct CustomOSDSettings: View {
-    @Default(.enableCustomOSD) var enableCustomOSD
-    @Default(.hasSeenOSDAlphaWarning) var hasSeenOSDAlphaWarning
-    @Default(.enableOSDVolume) var enableOSDVolume
-    @Default(.enableOSDBrightness) var enableOSDBrightness
-    @Default(.enableOSDKeyboardBacklight) var enableOSDKeyboardBacklight
-    @Default(.enableThirdPartyDDCIntegration) var enableThirdPartyDDCIntegration
-    @Default(.osdMaterial) var osdMaterial
-    @Default(.osdLiquidGlassCustomizationMode) var osdLiquidGlassCustomizationMode
-    @Default(.osdLiquidGlassVariant) var osdLiquidGlassVariant
-    @Default(.osdIconColorStyle) var osdIconColorStyle
-    @Default(.enableSystemHUD) var enableSystemHUD
-    @ObservedObject private var accessibilityPermission = AccessibilityPermissionStore.shared
-
-    @State private var showAlphaWarning = false
-    @State private var previewValue: CGFloat = 0.65
-    @State private var previewType: SneakContentType = .volume
-
-    private func highlightID(_ title: String) -> String {
-        SettingsTab.hudAndOSD.highlightID(for: title)
-    }
-
-    private var hasAccessibilityPermission: Bool {
-        accessibilityPermission.isAuthorized
-    }
-
-    private var availableOSDMaterials: [OSDMaterial] {
-        if #available(macOS 26.0, *) {
-            return OSDMaterial.allCases
-        }
-        return OSDMaterial.allCases.filter { $0 != .liquid }
-    }
-
-    private var liquidVariantRange: ClosedRange<Double> {
-        Double(LiquidGlassVariant.supportedRange.lowerBound)...Double(LiquidGlassVariant.supportedRange.upperBound)
-    }
-
-    private var osdLiquidVariantBinding: Binding<Double> {
-        Binding(
-            get: { Double(osdLiquidGlassVariant.rawValue) },
-            set: { newValue in
-                let raw = Int(newValue.rounded())
-                osdLiquidGlassVariant = LiquidGlassVariant.clamped(raw)
-            }
-        )
-    }
-
-    var body: some View {
-        Group {
-            if !hasAccessibilityPermission && !enableThirdPartyDDCIntegration {
-                Section {
-                    SettingsPermissionCallout(
-                        message: "Accessibility permission is needed to intercept system controls for the Custom OSD.",
-                        requestAction: { accessibilityPermission.requestAuthorizationPrompt() },
-                        openSettingsAction: { accessibilityPermission.openSystemSettings() }
-                    )
-                } header: {
-                    Text("Accessibility")
-                }
-            }
-
-            if hasAccessibilityPermission || enableThirdPartyDDCIntegration {
-                Section {
-                    Toggle("Volume OSD", isOn: $enableOSDVolume)
-                        .settingsHighlight(id: highlightID("Volume OSD"))
-                    Toggle("Brightness OSD", isOn: $enableOSDBrightness)
-                        .settingsHighlight(id: highlightID("Brightness OSD"))
-                    Toggle("Keyboard Backlight OSD", isOn: $enableOSDKeyboardBacklight)
-                        .settingsHighlight(id: highlightID("Keyboard Backlight OSD"))
-                        .disabledWhileExternalAppOwnsKeys("Disabled while the external display app is running \u{2014} that app owns the keyboard backlight keys.")
-                } header: {
-                    Text("Controls")
-                } footer: {
-                    Text("Choose which system controls should display custom OSD windows.")
-                        .foregroundStyle(.secondary)
-                        .font(.caption)
-                }
-
-                Section {
-                    Picker("Material", selection: $osdMaterial) {
-                        ForEach(availableOSDMaterials, id: \.self) { material in
-                            Text(material.rawValue).tag(material)
-                        }
-                    }
-                    .settingsHighlight(id: highlightID("Material"))
-                    .onChange(of: osdMaterial) { _, _ in
-                        previewValue = previewValue == 0.65 ? 0.651 : 0.65
-                    }
-
-                    if osdMaterial == .liquid {
-                        if #available(macOS 26.0, *) {
-                            SettingsSegmentedPicker(
-                                "Glass mode",
-                                selection: $osdLiquidGlassCustomizationMode,
-                                items: Array(LockScreenGlassCustomizationMode.allCases)
-                            ) { $0.rawValue }
-
-                            if osdLiquidGlassCustomizationMode == .customLiquid {
-                                VStack(alignment: .leading, spacing: 6) {
-                                    HStack {
-                                        Text("Custom liquid variant")
-                                        Spacer()
-                                        Text("v\(osdLiquidGlassVariant.rawValue)")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    Slider(value: osdLiquidVariantBinding, in: liquidVariantRange, step: 1)
-                                }
-                            }
-                        } else {
-                            Text("Custom Liquid is available on macOS 26 or later.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-
-                    Picker("Icon & Progress Color", selection: $osdIconColorStyle) {
-                        ForEach(OSDIconColorStyle.allCases, id: \.self) { style in
-                            Text(style.rawValue).tag(style)
-                        }
-                    }
-                    .settingsHighlight(id: highlightID("Icon & Progress Color"))
-                    .onChange(of: osdIconColorStyle) { _, _ in
-                        previewValue = previewValue == 0.65 ? 0.651 : 0.65
-                    }
-                } header: {
-                    Text("Appearance")
-                } footer: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Material Options:")
-                        Text("• Frosted Glass: Translucent blur effect")
-                        Text("• Liquid Glass: Modern glass effect (macOS 26+)")
-                        Text("• Solid Dark/Light/Auto: Opaque backgrounds")
-                        Text("")
-                        Text("Color options control the icon and progress bar appearance. Auto adapts to system theme.")
-                    }
-                    .foregroundStyle(.secondary)
-                    .font(.caption)
-                }
-
-                Section {
-                    HStack {
-                        Spacer()
-                        VStack(spacing: 16) {
-                            Text("Live Preview")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-
-                            CustomOSDView(
-                                type: .constant(previewType),
-                                value: .constant(previewValue),
-                                icon: .constant("")
-                            )
-                            .frame(width: 200, height: 200)
-
-                            HStack(spacing: 8) {
-                                Button("Volume") {
-                                    previewType = .volume
-                                }
-                                .buttonStyle(.bordered)
-
-                                Button("Brightness") {
-                                    previewType = .brightness
-                                }
-                                .buttonStyle(.bordered)
-                                
-                                Button("Backlight") {
-                                    previewType = .backlight
-                                }
-                                .buttonStyle(.bordered)
-                            }
-                            .controlSize(.small)
-                            
-                            Slider(value: $previewValue, in: 0...1)
-                                .frame(width: 160)
-                        }
-                        .padding(.vertical, 12)
-                        Spacer()
-                    }
-                } header: {
-                    Text("Preview")
-                } footer: {
-                    Text("Adjust settings above to see changes in real-time. The actual OSD appears at the bottom center of your screen.")
-                        .foregroundStyle(.secondary)
-                        .font(.caption)
-                }
-            }
-        }
-        .navigationTitle("Custom OSD")
-        .onAppear {
-            accessibilityPermission.refreshStatus()
-            if #unavailable(macOS 26.0), osdMaterial == .liquid {
-                osdMaterial = .frosted
-                osdLiquidGlassCustomizationMode = .standard
-            }
-        }
-        .onChange(of: accessibilityPermission.isAuthorized) { _, granted in
-            if !granted {
-                enableCustomOSD = false
-            }
-        }
-    }
-}
 
 struct SettingsPermissionCallout: View {
     let title: String
