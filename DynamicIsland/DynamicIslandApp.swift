@@ -132,8 +132,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // Debouncing mechanism for window size updates
     private var windowSizeUpdateWorkItem: DispatchWorkItem?
 
-    // Block-based AudioTap observers, kept with their center so they can be removed by token
-    private var audioTapObserverTokens: [(center: NotificationCenter, token: NSObjectProtocol)] = []
 //    let calendarManager = CalendarManager.shared
 //    let webcamManager = WebcamManager.shared
 //    var closeNotchWorkItem: DispatchWorkItem?
@@ -189,94 +187,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
     
-    /// Setup observers for music player state changes to restart AudioTap capture
-    private func setupAudioTapMusicObservers() {
-        // Registration is additive and this runs again every time the waveform setting is
-        // switched back on, so drop the previous generation instead of stacking duplicates.
-        // Block-based observers are only removable through the token they return, which is
-        // why they are retained in `audioTapObserverTokens`.
-        tearDownAudioTapMusicObservers()
-
-        // Listen for app launches to restart capture when music apps are opened
-        let targetBundleIDs = [
-            "com.apple.Music",
-            "com.spotify.client",
-            "com.amazon.music",
-            "sh.cider.genten.mac",
-            "com.apple.Safari",
-            "com.tidal.desktop",
-            "tv.plex.plexamp",
-            "com.roon.Roon",
-            "com.audirvana.Audirvana-Studio",
-            "com.vox.vox",
-            "com.coppertino.Vox",
-        ]
-        
-        let launchToken = NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didLaunchApplicationNotification,
-            object: nil,
-            queue: .main
-        ) { notification in
-            guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-                  let bundleID = app.bundleIdentifier,
-                  targetBundleIDs.contains(bundleID) else { return }
-            
-            // A target music app was launched, restart capture to include it
-            if Defaults[.enableRealTimeWaveform] {
-                print("🎵 [AudioTap] Music app launched: \(bundleID), restarting capture...")
-                // Give the app a moment to fully launch
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    AudioTap.shared.restartCapture()
-                }
-            }
-        }
-        
-        // Also observe app terminations to restart capture
-        let terminateToken = NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didTerminateApplicationNotification,
-            object: nil,
-            queue: .main
-        ) { notification in
-            guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-                  let bundleID = app.bundleIdentifier,
-                  targetBundleIDs.contains(bundleID) else { return }
-            
-            // A target music app was terminated, restart capture to update the list
-            if Defaults[.enableRealTimeWaveform] {
-                print("🎵 [AudioTap] Music app terminated: \(bundleID), restarting capture...")
-                AudioTap.shared.restartCapture()
-            }
-        }
-
-        // Restart capture when the audio output route changes (e.g. AirPods connect/
-        // disconnect). AudioTap skips Spotify while a Bluetooth route is active to keep the
-        // AirPods pause gesture working, so the tap must be rebuilt to re-include or exclude
-        // Spotify whenever the route flips.
-        let routeToken = NotificationCenter.default.addObserver(
-            forName: .systemAudioRouteDidChange,
-            object: nil,
-            queue: .main
-        ) { _ in
-            if Defaults[.enableRealTimeWaveform] {
-                print("🔀 [AudioTap] Audio route changed, restarting capture...")
-                AudioTap.shared.restartCapture()
-            }
-        }
-
-        audioTapObserverTokens = [
-            (NSWorkspace.shared.notificationCenter, launchToken),
-            (NSWorkspace.shared.notificationCenter, terminateToken),
-            (NotificationCenter.default, routeToken),
-        ]
-    }
-
-    /// Removes the AudioTap observers registered by `setupAudioTapMusicObservers()`.
-    private func tearDownAudioTapMusicObservers() {
-        for (center, token) in audioTapObserverTokens {
-            center.removeObserver(token)
-        }
-        audioTapObserverTokens.removeAll()
-    }
 
     func applicationWillTerminate(_ notification: Notification) {
         let userInfo: [String: Any] = [
@@ -301,10 +211,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         extensionXPCServiceHost.stop()
         extensionRPCServer.stop()
         networkConnectivityManager.stopMonitoring()
-        
-        // Stop AudioTap capture
-        AudioTap.shared.stopCapture()
-
         // Restore Lunar's native OSD if integration was active
         LunarManager.shared.appWillTerminate()
     }
@@ -786,29 +692,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             networkConnectivityManager.startMonitoring()
         }
         
-        // Setup Real-time Audio Waveform capture if enabled
-        if Defaults[.enableRealTimeWaveform] {
-            Task {
-                await AudioTap.shared.startCapture()
-            }
-            setupAudioTapMusicObservers()
-        }
-        
-        // Observe enableRealTimeWaveform changes
-        Defaults.publisher(.enableRealTimeWaveform, options: [])
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] change in
-                if change.newValue {
-                    Task {
-                        await AudioTap.shared.startCapture()
-                    }
-                    self?.setupAudioTapMusicObservers()
-                } else {
-                    AudioTap.shared.stopCapture()
-                    self?.tearDownAudioTapMusicObservers()
-                }
-            }
-            .store(in: &cancellables)
         
         // Observe tab changes - use immediate resize to keep the notch pinned
         // Deferred to next run loop tick because @Published fires on willSet,

@@ -180,3 +180,20 @@ enum AudioProcessQuery {
         return unmanagedUID.takeRetainedValue() as String
     }
 }
+
+enum AudioTapTargetMatcher {
+    /// CoreAudio exposes helper processes separately from their parent app. A
+    /// player such as TIDAL therefore appears as `com.tidal.desktop.player`
+    /// even though the app selected by the user is `com.tidal.desktop`.
+    static func targetBundleIdentifier(
+        for audioProcessBundleIdentifier: String,
+        among targetBundleIdentifiers: [String]
+    ) -> String? {
+        let processIdentifier = audioProcessBundleIdentifier.lowercased()
+        return targetBundleIdentifiers.first { targetIdentifier in
+            let normalizedTarget = targetIdentifier.lowercased()
+            return processIdentifier == normalizedTarget
+                || processIdentifier.hasPrefix(normalizedTarget + ".")
+        }
+    }
+}

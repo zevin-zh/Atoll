@@ -2,8 +2,7 @@
  * Atoll (DynamicIsland)
  * Copyright (C) 2024-2026 Atoll Contributors
  *
- * Unified audio visualizer that conditionally uses real-time audio spectrum
- * or the original animated spectrum based on user preference.
+ * Animated audio spectrum visualizer (fake animation, no audio tap).
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,17 +16,12 @@
 import SwiftUI
 import Defaults
 
-/// Unified audio visualizer view that switches between real-time and animated based on user preference
+/// Animated audio spectrum visualizer
 struct AudioVisualizerView: View {
     @Binding var isPlaying: Bool
-    @Default(.enableRealTimeWaveform) private var enableRealTimeWaveform
     
     var body: some View {
-        if enableRealTimeWaveform {
-            RealTimeAudioSpectrumView(isPlaying: $isPlaying)
-        } else {
-            AudioSpectrumView(isPlaying: $isPlaying)
-        }
+        AudioSpectrumView(isPlaying: $isPlaying)
     }
 }
 

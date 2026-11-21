@@ -1309,8 +1309,6 @@ struct CustomSlider: View {
     var desaturatesWhenIdle: Bool = false
     
     @State private var isHovering: Bool = false
-    @Default(.enableRealTimeWaveform) var enableRealTimeWaveform
-    @Default(.enableWaveformScrubber) var enableWaveformScrubber
 
     private var isEngaged: Bool { dragging || isHovering }
 
@@ -1332,45 +1330,27 @@ struct CustomSlider: View {
             let progress = rangeSpan == .zero ? 0 : (value - range.lowerBound) / rangeSpan
             let filledTrackWidth = min(max(progress, 0), 1) * max(1, width)
             
-            let showScrubber = isHovering && enableRealTimeWaveform && enableWaveformScrubber
-
             ZStack(alignment: .bottomLeading) {
                 // Background track
-                if showScrubber {
-                    RealTimeWaveformScrubberView(
-                        color: color,
-                        secondaryColor: Defaults[.coloredSpectrogram] ? Color(nsColor: MusicManager.shared.secondaryColor) : nil,
-                        progress: progress,
-                        minHeight: trackHeight
-                    )
-                    .frame(height: trackHeight * 3.5)
-                    .offset(y: trackHeight * 0.2)
+                Rectangle()
+                    .fill(.gray.opacity(0.3))
+                    .frame(height: trackHeight)
+                    .cornerRadius(trackHeight / 2)
                     .transaction { $0.disablesAnimations = true }
-                } else {
-                    Rectangle()
-                        .fill(.gray.opacity(0.3))
-                        .frame(height: trackHeight)
-                        .cornerRadius(trackHeight / 2)
-                        .transaction { $0.disablesAnimations = true }
-                }
 
                 // Filled track
-                if !showScrubber {
-                    Rectangle()
-                        .fill(color)
-                        .frame(width: filledTrackWidth, height: trackHeight)
-                        .cornerRadius(trackHeight / 2)
-                        .transaction { $0.disablesAnimations = true }
-                }
+                Rectangle()
+                    .fill(color)
+                    .frame(width: filledTrackWidth, height: trackHeight)
+                    .cornerRadius(trackHeight / 2)
+                    .transaction { $0.disablesAnimations = true }
             }
             // The track swells from its middle, so it grows into the space
             // above and below equally instead of climbing off the baseline --
             // which is also what leaves it level with the times beside it.
-            // The waveform scrubber is the exception: it is 3.5x the track and
-            // is drawn to rise out of the bar, so it stays bottom-anchored.
             .frame(
                 height: max(restingTrackHeight, draggingTrackHeight),
-                alignment: showScrubber ? .bottom : .center
+                alignment: .center
             )
             .contentShape(Rectangle())
             .highPriorityGesture(

@@ -793,7 +793,6 @@ extension Defaults.Keys {
     static let playerColorTinting = Key<Bool>("playerColorTinting", default: true)
     static let useMusicVisualizer = Key<Bool>("useMusicVisualizer", default: true)
     static let visualizerBarCount = Key<Int>("visualizerBarCount", default: 4)
-    static let enableWaveformScrubber = Key<Bool>("enableWaveformScrubber", default: true)
     static let colorExtractionMode = Key<ColorExtractionMode>("colorExtractionMode", default: .vibrant)
     static let customVisualizers = Key<[CustomVisualizer]>("customVisualizers", default: [])
     static let selectedVisualizer = Key<CustomVisualizer?>("selectedVisualizer", default: nil)
@@ -811,7 +810,6 @@ extension Defaults.Keys {
     
         // MARK: Media playback
     static let coloredSpectrogram = Key<Bool>("coloredSpectrogram", default: true)
-    static let enableRealTimeWaveform = Key<Bool>("enableRealTimeWaveform", default: false)
     static let enableSneakPeek = Key<Bool>("enableSneakPeek", default: false)
     static let sneakPeekStyles = Key<SneakPeekStyle>("sneakPeekStyles", default: .standard)
     static let showSneakPeekOnTrackChange = Key<Bool>("showSneakPeekOnTrackChange", default: true)

@@ -3030,7 +3030,6 @@ struct Media: View {
     @Default(.lyricsPanelWidth) private var lyricsPanelWidth
     @Default(.lyricsPanelOffset) private var lyricsPanelOffset
     @Default(.visualizerBarCount) private var visualizerBarCount
-    @Default(.enableWaveformScrubber) private var enableWaveformScrubber
     @Default(.colorExtractionMode) private var colorExtractionMode
     @Default(.parallaxEffectIntensity) private var parallaxEffectIntensity
 
@@ -3358,14 +3357,6 @@ struct Media: View {
             }
 
             Section {
-                Defaults.Toggle(key: .enableRealTimeWaveform) {
-                    HStack {
-                        Text("Enable real-time waveform")
-                        customBadge(text: "Beta")
-                    }
-                }
-                .settingsHighlight(id: highlightID("Enable real-time waveform"))
-                
                 Picker("Visualizer candles", selection: $visualizerBarCount) {
                     Text("4").tag(4)
                     Text("5").tag(5)
@@ -3377,11 +3368,8 @@ struct Media: View {
                     Text("Vibrant").tag(ColorExtractionMode.vibrant)
                 }
                 
-                Toggle("Scrubbable real-time waveform", isOn: $enableWaveformScrubber)
             } header: {
                 Text("Music Visualizer")
-            } footer: {
-                Text("When enabled, the music visualizer displays real-time audio spectrum data synced to your music. Requires macOS 14.2+ and uses minimal CPU/GPU resources via the Accelerate framework.")
             }
 
             Section {
