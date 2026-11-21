@@ -42,16 +42,10 @@ struct DynamicNotchApp: App {
         updaterController = SPUStandardUpdaterController(
             startingUpdater: !AppRuntimeEnvironment.isUITesting,
             updaterDelegate: updaterDelegate, userDriverDelegate: nil)
-
-        // Initialize the settings window controller with the updater controller
-        SettingsWindowController.shared.setUpdaterController(updaterController)
     }
 
     var body: some Scene {
         MenuBarExtra("dynamic.island", systemImage: "mountain.2.fill", isInserted: $showMenuBarIcon) {
-            Button("Settings") {
-                SettingsWindowController.shared.showWindow()
-            }
             CheckForUpdatesView(updater: updaterController.updater)
             Divider()
             Button("Restart Atoll") {
@@ -74,15 +68,6 @@ struct DynamicNotchApp: App {
                 NSApplication.shared.terminate(self)
             }
             .keyboardShortcut(KeyEquivalent("Q"), modifiers: .command)
-        }
-    }
-
-    @CommandsBuilder
-    var commands: some Commands {
-        CommandGroup(replacing: .appSettings) {
-            Button("Settings…") {
-                SettingsWindowController.shared.showWindow()
-            }
         }
     }
 }
@@ -1427,10 +1412,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     NSApp.setActivationPolicy(.accessory)
                     window.close()
                     NSApp.deactivate()
-                },
-                onOpenSettings: {
-                    window.close()
-                    SettingsWindowController.shared.showWindow()
                 }
             ))
             window.isRestorable = false

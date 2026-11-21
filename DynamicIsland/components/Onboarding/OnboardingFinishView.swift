@@ -24,7 +24,6 @@ import SwiftUI
 
 struct OnboardingFinishView: View {
     let onFinish: () -> Void
-    let onOpenSettings: () -> Void
 
     var body: some View {
         VStack(spacing: 20) {
@@ -39,22 +38,17 @@ struct OnboardingFinishView: View {
                 .font(.largeTitle)
                 .fontWeight(.bold)
 
-            Text("You can now enjoy the app. If you want to tweak things further, you can always visit the settings.")
+            Text("You can now enjoy the app.")
                 .font(.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
-            
+
+
             Spacer()
             Spacer()
 
             VStack(spacing: 12) {
-                Button(action: onOpenSettings) {
-                    Label("Customize in Settings", systemImage: "gear")
-                        .controlSize(.large)
-                }
-                .controlSize(.large)
-
                 Button("Finish", action: onFinish)
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
@@ -83,6 +77,7 @@ struct OnboardingFinishView: View {
     }
 }
 
+
 #Preview {
-    OnboardingFinishView(onFinish: { }, onOpenSettings: { })
+    OnboardingFinishView(onFinish: { })
 }

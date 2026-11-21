@@ -766,21 +766,6 @@ struct ContentView: View {
                 }
             }
             .sensoryFeedback(.alignment, trigger: haptics)
-            .contextMenu {
-                Button("Settings") {
-                    SettingsWindowController.shared.showWindow()
-                }
-//                Button("Edit") { // Doesnt work....
-//                    let dn = DynamicNotch(content: EditPanelView())
-//                    dn.toggle()
-//                }
-//                #if DEBUG
-//                .disabled(false)
-//                #else
-//                .disabled(true)
-//                #endif
-//                .keyboardShortcut("E", modifiers: .command)
-            }
     }
 
     private var rootBodyView: some View {

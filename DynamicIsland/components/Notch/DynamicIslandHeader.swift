@@ -195,21 +195,6 @@ struct DynamicIslandHeader: View {
                             }
                         }
                     }
-                    
-                    if Defaults[.settingsIconInNotch] {
-                        Button(action: {
-                            SettingsWindowController.shared.showWindow()
-                        }) {
-                            Capsule()
-                                .fill(.black)
-                                .frame(width: 30, height: 30)
-                                .overlay {
-                                    headerGlyph("gearshape")
-                                }
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                    
                     // Screen Recording Indicator
                     if Defaults[.enableScreenRecordingDetection] && Defaults[.showRecordingIndicator] && !shouldSuppressStatusIndicators {
                         RecordingIndicator()
@@ -316,8 +301,7 @@ struct DynamicIslandHeader: View {
 
 private extension DynamicIslandHeader {
     var shouldSuppressStatusIndicators: Bool {
-        Defaults[.settingsIconInNotch]
-            && Defaults[.enableClipboardManager]
+        Defaults[.enableClipboardManager]
             && Defaults[.showClipboardIcon]
             && Defaults[.enableTimerFeature]
     }

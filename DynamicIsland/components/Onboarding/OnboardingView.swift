@@ -40,7 +40,6 @@ struct OnboardingView: View {
     @State private var showFocusMonitoringChoice = false
     @State private var didPresentFocusMonitoringChoice = false
     let onFinish: () -> Void
-    let onOpenSettings: () -> Void
 
     var body: some View {
         ZStack {
@@ -119,7 +118,7 @@ struct OnboardingView: View {
                 .transition(.opacity)
 
             case .finished:
-                OnboardingFinishView(onFinish: onFinish, onOpenSettings: onOpenSettings)
+                OnboardingFinishView(onFinish: onFinish)
             }
         }
         .frame(width: 400, height: 600)
