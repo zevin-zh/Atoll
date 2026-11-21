@@ -345,6 +345,9 @@ struct ContentView: View {
                 ForEach(pagerOrder, id: \.self) { view in
                     pagerPage(for: view)
                         .containerRelativeFrame(.horizontal)
+                        // 页面内容为空时（如剪贴板无记录）撑住最小高度，
+                        // 否则岛背景会跟着内容一起塌掉。
+                        .frame(minHeight: 200, maxHeight: .infinity)
                         .id(view)
                 }
             }
@@ -352,6 +355,7 @@ struct ContentView: View {
         }
         .scrollTargetBehavior(.paging)
         .scrollPosition(id: pagerSelection)
+        .frame(minHeight: 200)
         .scrollIndicators(.hidden)
         .scrollDisabled(false)
     }
