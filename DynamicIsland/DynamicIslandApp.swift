@@ -700,6 +700,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
+        guard !NotchBridge.shared.isFileDragActive else {
+            window.setFrame(targetFrame, display: true)
+            return
+        }
+
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.26
             context.timingFunction = CAMediaTimingFunction(name: .easeOut)
@@ -1843,6 +1848,8 @@ final class MediaControlsStateCoordinator {
 final class NotchBridge {
     static let shared = NotchBridge()
     weak var viewModel: DynamicIslandViewModel?
+    /// 文件拖拽进行中：悬停轮询要让路，窗口也别播缓动（否则会跳一下）。
+    var isFileDragActive = false
     private init() {}
 }
 
@@ -1871,9 +1878,28 @@ final class NotchFileDropCatcher: NSView {
 
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
         guard !fileURLs(sender).isEmpty else { return [] }
-        NotchBridge.shared.viewModel?.open()
-        DynamicIslandViewCoordinator.shared.currentView = .shelf
+        enterDragSession()
         return .copy
+    }
+
+    private func enterDragSession() {
+        NotchBridge.shared.isFileDragActive = true
+        NotchBridge.shared.viewModel?.open()
+        // open() 内部会按设置重置页面，所以打开之后再切，并补一次延迟断言。
+        DynamicIslandViewCoordinator.shared.currentView = .shelf
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(350))
+            guard NotchBridge.shared.isFileDragActive else { return }
+            DynamicIslandViewCoordinator.shared.currentView = .shelf
+        }
+    }
+
+    override func draggingExited(_ sender: NSDraggingInfo?) {
+        endDragSession()
+    }
+
+    private func endDragSession() {
+        NotchBridge.shared.isFileDragActive = false
     }
 
     override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
@@ -1882,6 +1908,7 @@ final class NotchFileDropCatcher: NSView {
 
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
         let urls = fileURLs(sender)
+        defer { endDragSession() }
         guard !urls.isEmpty else { return false }
         Task { @MainActor in
             let items = await ShelfDropService.items(from: urls)

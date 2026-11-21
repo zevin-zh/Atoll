@@ -2402,6 +2402,9 @@ struct ContentView: View {
     }
 
     private func pollHover() {
+        // 文件拖拽期间由 NotchFileDropCatcher 接管，轮询必须让路，
+        // 否则会抢先按"上次的页面"打开，把暂存架顶掉。
+        guard !NotchBridge.shared.isFileDragActive else { return }
         guard Defaults[.openNotchOnHover],
               !coordinator.isHoverOpenSuppressed,
               !lockScreenManager.isLocked,
