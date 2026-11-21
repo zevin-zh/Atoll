@@ -310,6 +310,82 @@ struct ContentView: View {
     private let musicControlPauseGrace: TimeInterval = 5
     private let musicControlResumeDelay: TimeInterval = 0.24
 
+    // MARK: - 横向分页容器
+
+    /// 当前可见的标签页（顺序即左右顺序，与标签栏一致）。
+    private var pagerOrder: [NotchViews] {
+        var order: [NotchViews] = []
+        if Defaults[.dynamicShelf] { order.append(.shelf) }
+        if enableTimerFeature && timerDisplayMode == .tab { order.append(.timer) }
+        if Defaults[.enableStatsFeature] { order.append(.stats) }
+        if Defaults[.enableLLMUsageFeature] { order.append(.llmUsage) }
+        if Defaults[.enableNotes] || (Defaults[.enableClipboardManager] && Defaults[.clipboardDisplayMode] == .separateTab) {
+            order.append(.notes)
+        }
+        if Defaults[.enableTerminalFeature] { order.append(.terminal) }
+        if order.isEmpty { order.append(.shelf) }
+        return order
+    }
+
+    private var pagerSelection: Binding<NotchViews?> {
+        Binding(
+            get: { coordinator.currentView },
+            set: { newValue in
+                guard let newValue, newValue != coordinator.currentView else { return }
+                coordinator.currentView = newValue
+            }
+        )
+    }
+
+    /// 每一页占满容器宽度，左右滑动切换 —— 不再用推入式转场，
+    /// 页面尺寸统一，方向天然跟着手走。
+    private var tabPager: some View {
+        ScrollView(.horizontal) {
+            LazyHStack(spacing: 0) {
+                ForEach(pagerOrder, id: \.self) { view in
+                    pagerPage(for: view)
+                        .containerRelativeFrame(.horizontal)
+                        .id(view)
+                }
+            }
+            .scrollTargetLayout()
+        }
+        .scrollTargetBehavior(.viewAligned)
+        .scrollPosition(id: pagerSelection)
+        .scrollIndicators(.hidden)
+        .scrollDisabled(false)
+    }
+
+    @ViewBuilder
+    private func pagerPage(for view: NotchViews) -> some View {
+        switch view {
+        case .home:
+            NotchHomeView(albumArtNamespace: albumArtNamespace)
+        case .shelf:
+            NotchShelfView()
+        case .timer:
+            NotchTimerView()
+        case .stats:
+            NotchStatsView()
+        case .llmUsage:
+            NotchLLMUsageView()
+        case .colorPicker:
+            NotchColorPickerView()
+        case .notes:
+            NotchNotesView()
+        case .clipboard:
+            NotchClipboardView()
+        case .terminal:
+            NotchTerminalView()
+        case .extensionExperience:
+            if let payload = currentExtensionTabPayload() {
+                ExtensionNotchExperienceTabView(payload: payload)
+            } else {
+                NotchShelfView()
+            }
+        }
+    }
+
     // MARK: - Tab switch direction for smooth transitions
     
     private var tabSwitchTransition: AnyTransition {
@@ -1291,36 +1367,7 @@ struct ContentView: View {
               
               ZStack {
                   if vm.notchState == .open {
-                      Group {
-                          switch coordinator.currentView {
-                              case .home:
-                                  NotchHomeView(albumArtNamespace: albumArtNamespace)
-                              case .shelf:
-                                  NotchShelfView()
-                              case .timer:
-                                  NotchTimerView()
-                              case .stats:
-                                  NotchStatsView()
-                              case .llmUsage:
-                                  NotchLLMUsageView()
-                              case .colorPicker:
-                                  NotchColorPickerView()
-                            case .notes:
-                                NotchNotesView()
-                            case .clipboard:
-                                NotchClipboardView()
-                            case .terminal:
-                                NotchTerminalView()
-                            case .extensionExperience:
-                                if let payload = currentExtensionTabPayload() {
-                                    ExtensionNotchExperienceTabView(payload: payload)
-                                } else {
-                                    NotchHomeView(albumArtNamespace: albumArtNamespace)
-                                }
-                          }
-                      }
-                      .id(coordinator.currentView)
-                      .transition(tabSwitchTransition)
+                      tabPager
                   }
               }
               .zIndex(1)
