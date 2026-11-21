@@ -2409,9 +2409,12 @@ struct ContentView: View {
         guard isPointerNearNotchRegion() else { return true }
 
         NotchBridge.shared.isFileDragActive = true
-        if vm.notchState == .closed {
-            vm.open()
-        }
+
+        // 只在"岛还收着"时强制切暂存架 —— 岛已经展开时用户是在操作标签，
+        // 这时切换会导致点其他标签先闪一下暂存架。
+        guard vm.notchState == .closed else { return true }
+
+        vm.open()
         if coordinator.currentView != .shelf {
             coordinator.currentView = .shelf
         }
