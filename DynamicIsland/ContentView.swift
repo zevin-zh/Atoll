@@ -747,6 +747,11 @@ struct ContentView: View {
 
     private var mainLayoutBase: some View {
         NotchLayout()
+            // 展开态高度钉死：剪贴板清空后内部内容会塌成 0 高，
+            // 而 .background(.black) + .clipShape 跟着内容走，不钉住就会
+            // 塌成直角矩形。页面高度已统一为 openNotchSize.height。
+            .frame(height: vm.notchState == .open ? openNotchSize.height : nil,
+                   alignment: .top)
             .frame(alignment: .top)
             // Connectivity HUD metrics already describe the complete surface.
             // Applying the regular closed-notch inset here makes that surface
