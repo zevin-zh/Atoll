@@ -390,7 +390,8 @@ struct ContentView: View {
                 .frame(height: openNotchSize.height)
         case .clipboard:
             NotchClipboardView()
-                .frame(height: openNotchSize.height)
+                // 与暂存架页一致：用 dynamicNotchSize（窗口同源），保证两页大小一致。
+                .frame(height: dynamicNotchSize.height)
         case .terminal:
             NotchTerminalView()
         case .extensionExperience:
