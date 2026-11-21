@@ -212,10 +212,6 @@ private enum SettingsSearchIndex {
         SettingsSearchEntry(tab: .general, title: "Show on a specific display", keywords: ["preferred screen", "display picker"], highlightID: SettingsTab.general.highlightID(for: "Show on a specific display")),
         SettingsSearchEntry(tab: .general, title: "Automatically switch displays", keywords: ["auto switch", "displays"], highlightID: SettingsTab.general.highlightID(for: "Automatically switch displays")),
         SettingsSearchEntry(tab: .general, title: "Hide Dynamic Island during screenshots & recordings", keywords: ["privacy", "screenshot", "recording"], highlightID: SettingsTab.general.highlightID(for: "Hide Dynamic Island during screenshots & recordings")),
-        SettingsSearchEntry(tab: .general, title: "Enable Keep Awake", keywords: ["caffeinate", "keep awake", "prevent sleep", "insomnia", "no sleep"], highlightID: SettingsTab.general.highlightID(for: "Enable Keep Awake")),
-        SettingsSearchEntry(tab: .general, title: "Show Keep Awake icon in the notch", keywords: ["caffeinate", "keep awake", "icon", "notch"], highlightID: SettingsTab.general.highlightID(for: "Show Keep Awake icon in the notch")),
-        SettingsSearchEntry(tab: .general, title: "Default duration", keywords: ["caffeinate", "keep awake", "duration", "timeout"], highlightID: SettingsTab.general.highlightID(for: "Default duration")),
-        SettingsSearchEntry(tab: .general, title: "Also keep the display awake", keywords: ["caffeinate", "keep awake", "display sleep", "screen"], highlightID: SettingsTab.general.highlightID(for: "Also keep the display awake")),
         SettingsSearchEntry(tab: .general, title: "Enable gestures", keywords: ["gestures", "trackpad"], highlightID: SettingsTab.general.highlightID(for: "Enable gestures")),
         SettingsSearchEntry(tab: .general, title: "Close gesture", keywords: ["pinch", "swipe"], highlightID: SettingsTab.general.highlightID(for: "Close gesture")),
         SettingsSearchEntry(tab: .general, title: "Reverse swipe gestures", keywords: ["reverse", "swipe", "media"], highlightID: SettingsTab.general.highlightID(for: "Reverse swipe gestures")),
@@ -259,9 +255,6 @@ private enum SettingsSearchIndex {
         SettingsSearchEntry(tab: .battery, title: "Low battery threshold", keywords: ["battery", "threshold", "percent"], highlightID: SettingsTab.battery.highlightID(for: "Low battery threshold")),
         SettingsSearchEntry(tab: .battery, title: "Full battery style", keywords: ["battery", "style", "compact", "standard"], highlightID: SettingsTab.battery.highlightID(for: "Full battery style")),
         SettingsSearchEntry(tab: .battery, title: "Full charge threshold", keywords: ["battery", "threshold", "full"], highlightID: SettingsTab.battery.highlightID(for: "Full charge threshold")),
-        SettingsSearchEntry(tab: .devices, title: "Enable per-app volume", keywords: ["per app volume", "app volume", "mixer", "audio", "mute app"], highlightID: SettingsTab.devices.highlightID(for: "Enable per-app volume")),
-        SettingsSearchEntry(tab: .devices, title: "Show app volume icon in the notch", keywords: ["per app volume", "icon", "notch", "mixer"], highlightID: SettingsTab.devices.highlightID(for: "Show app volume icon in the notch")),
-        SettingsSearchEntry(tab: .devices, title: "Reset all app volumes", keywords: ["per app volume", "reset", "mixer"], highlightID: SettingsTab.devices.highlightID(for: "Reset all app volumes")),
 
         // HUDs
         SettingsSearchEntry(tab: .devices, title: "Show Bluetooth device connections", keywords: ["bluetooth", "hud"], highlightID: SettingsTab.devices.highlightID(for: "Show Bluetooth device connections")),
@@ -1065,8 +1058,6 @@ struct GeneralSettings: View {
     @Default(.reverseScrollGestures) var reverseScrollGestures
     @Default(.externalDisplayStyle) var externalDisplayStyle
     @Default(.hideNonNotchUntilHover) var hideNonNotchUntilHover
-    @Default(.enableCaffeinate) var enableCaffeinate
-    @Default(.caffeinateDefaultDuration) var caffeinateDefaultDuration
 
     private func highlightID(_ title: String) -> String {
         SettingsTab.general.highlightID(for: title)
@@ -1153,36 +1144,6 @@ struct GeneralSettings: View {
                 Text("System features")
             }
 
-            Section {
-                Defaults.Toggle(key: .enableCaffeinate) {
-                    Text("Enable Keep Awake")
-                }
-                .settingsHighlight(id: highlightID("Enable Keep Awake"))
-
-                Defaults.Toggle(key: .showCaffeinateIcon) {
-                    Text("Show Keep Awake icon in the notch")
-                }
-                .disabled(!enableCaffeinate)
-                .settingsHighlight(id: highlightID("Show Keep Awake icon in the notch"))
-
-                Picker("Default duration", selection: $caffeinateDefaultDuration) {
-                    ForEach(CaffeinateDuration.allCases) { duration in
-                        Text(duration.displayName).tag(duration)
-                    }
-                }
-                .disabled(!enableCaffeinate)
-                .settingsHighlight(id: highlightID("Default duration"))
-
-                Defaults.Toggle(key: .caffeinateKeepsDisplayAwake) {
-                    Text("Also keep the display awake")
-                }
-                .disabled(!enableCaffeinate)
-                .settingsHighlight(id: highlightID("Also keep the display awake"))
-            } header: {
-                Text("Keep Awake")
-            } footer: {
-                Text("Holds a power assertion so the Mac will not sleep, the way the caffeinate command does. Turning this off also ends a session that is already running. With the display option off, the screen can still sleep while the system stays up.")
-            }
 
             Section {
                 Picker(selection: $notchHeightMode, label:
@@ -2642,7 +2603,6 @@ private struct HUDSelectionCard<Preview: View>: View {
 private struct DevicesSettingsView: View {
     @Default(.progressBarStyle) var progressBarStyle
     @Default(.useBluetoothHUD3DIcon) private var useBluetoothHUD3DIcon
-    @Default(.enablePerAppVolume) private var enablePerAppVolume
 
     private func highlightID(_ title: String) -> String {
         SettingsTab.devices.highlightID(for: title)
@@ -2654,28 +2614,6 @@ private struct DevicesSettingsView: View {
 
     var body: some View {
         Form {
-            Section {
-                Defaults.Toggle(key: .enablePerAppVolume) {
-                    Text("Enable per-app volume")
-                }
-                .settingsHighlight(id: highlightID("Enable per-app volume"))
-
-                Defaults.Toggle(key: .showPerAppVolumeIcon) {
-                    Text("Show app volume icon in the notch")
-                }
-                .disabled(!enablePerAppVolume)
-                .settingsHighlight(id: highlightID("Show app volume icon in the notch"))
-
-                Button("Reset all app volumes") {
-                    PerAppVolumeManager.shared.resetAll()
-                }
-                .disabled(!enablePerAppVolume)
-                .settingsHighlight(id: highlightID("Reset all app volumes"))
-            } header: {
-                Text("App Volume")
-            } footer: {
-                Text("Gives each app its own volume and mute, independent of the system volume. macOS will ask for audio recording permission the first time an app's level is changed: routing an app's audio through Atoll is the only way it can be adjusted, and nothing is ever recorded or written to disk. Apps left at 100% and unmuted keep their normal, untouched path to the speakers.")
-            }
 
             Section {
                 Defaults.Toggle(key: .showBluetoothDeviceConnections) {
@@ -7030,7 +6968,6 @@ struct Shortcuts: View {
     @Default(.enableTimerFeature) var enableTimerFeature
     @Default(.enableClipboardManager) var enableClipboardManager
     @Default(.enableShortcuts) var enableShortcuts
-    @Default(.enableCaffeinate) var enableCaffeinateFeature
 
     private func highlightID(_ title: String) -> String {
         SettingsTab.shortcuts.highlightID(for: title)
@@ -7065,25 +7002,6 @@ struct Shortcuts: View {
                         .font(.caption)
                 }
 
-                Section {
-                    VStack(alignment: .leading) {
-                        KeyboardShortcuts.Recorder("Toggle Keep Awake:", name: .toggleCaffeinate)
-                            .disabled(!enableShortcuts || !enableCaffeinateFeature)
-                        if !enableCaffeinateFeature {
-                            Text("Keep Awake is disabled")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .padding(.top, 2)
-                        }
-                    }
-                } header: {
-                    Text("Keep Awake")
-                } footer: {
-                    Text("Starts the default duration set in General, or ends a running session.")
-                        .multilineTextAlignment(.trailing)
-                        .foregroundStyle(.secondary)
-                        .font(.caption)
-                }
 
                 Section {
                     KeyboardShortcuts.Recorder("Toggle Notch Open:", name: .toggleNotchOpen)

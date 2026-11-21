@@ -2520,8 +2520,6 @@ struct ContentView: View {
      return vm.isBatteryPopoverActive || 
          vm.isClipboardPopoverActive || 
          vm.isTimerPopoverActive ||
-         vm.isPerAppVolumePopoverActive ||
-         vm.isCaffeinatePopoverActive ||
          vm.isMediaOutputPopoverActive ||
          vm.isReminderPopoverActive
     }

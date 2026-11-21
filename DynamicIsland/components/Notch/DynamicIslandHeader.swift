@@ -28,18 +28,11 @@ struct DynamicIslandHeader: View {
     @ObservedObject var shelfState = ShelfStateViewModel.shared
     @ObservedObject var timerManager = TimerManager.shared
     @ObservedObject var doNotDisturbManager = DoNotDisturbManager.shared
-    @ObservedObject var caffeinateManager = CaffeinateManager.shared
     @State private var showClipboardPopover = false
     @State private var showTimerPopover = false
-    @State private var showPerAppVolumePopover = false
-    @State private var showCaffeinatePopover = false
     @Default(.enableTimerFeature) var enableTimerFeature
     @Default(.timerDisplayMode) var timerDisplayMode
     @Default(.showClipboardIcon) var showClipboardIcon
-    @Default(.enablePerAppVolume) var enablePerAppVolume
-    @Default(.showPerAppVolumeIcon) var showPerAppVolumeIcon
-    @Default(.enableCaffeinate) var enableCaffeinate
-    @Default(.showCaffeinateIcon) var showCaffeinateIcon
     @Default(.clipboardDisplayMode) var clipboardDisplayMode
     @Default(.showBatteryIndicator) var showBatteryIndicator
     @Default(.showBatteryPercentInside) var showBatteryPercentInside
@@ -203,69 +196,6 @@ struct DynamicIslandHeader: View {
                         }
                     }
                     
-                    if enablePerAppVolume && showPerAppVolumeIcon {
-                        Button(action: {
-                            withAnimation(.smooth) {
-                                showPerAppVolumePopover.toggle()
-                            }
-                        }) {
-                            Capsule()
-                                .fill(.black)
-                                .frame(width: 30, height: 30)
-                                .overlay {
-                                    headerGlyph("slider.vertical.3")
-                                }
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .popover(isPresented: $showPerAppVolumePopover, arrowEdge: .bottom) {
-                            PerAppVolumePopover()
-                        }
-                        .onChange(of: showPerAppVolumePopover) { isActive in
-                            vm.isPerAppVolumePopoverActive = isActive
-
-                            if !isActive {
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                    vm.shouldRecheckHover.toggle()
-                                }
-                            }
-                        }
-                    }
-
-                    if enableCaffeinate && showCaffeinateIcon {
-                        Button(action: {
-                            withAnimation(.smooth) {
-                                showCaffeinatePopover.toggle()
-                            }
-                        }) {
-                            Capsule()
-                                .fill(.black)
-                                .frame(width: 30, height: 30)
-                                .overlay {
-                                    // Tinting the active state is the only
-                                    // signal the closed row can give that the
-                                    // Mac is being held awake, so it is not
-                                    // just a filled-vs-hollow glyph swap.
-                                    headerGlyph(
-                                        caffeinateManager.isActive ? "cup.and.saucer.fill" : "cup.and.saucer",
-                                        color: caffeinateManager.isActive ? .yellow : .white
-                                    )
-                                }
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .popover(isPresented: $showCaffeinatePopover, arrowEdge: .bottom) {
-                            CaffeinatePopover()
-                        }
-                        .onChange(of: showCaffeinatePopover) { isActive in
-                            vm.isCaffeinatePopoverActive = isActive
-
-                            if !isActive {
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                    vm.shouldRecheckHover.toggle()
-                                }
-                            }
-                        }
-                    }
-
                     if Defaults[.settingsIconInNotch] {
                         Button(action: {
                             SettingsWindowController.shared.showWindow()
@@ -367,18 +297,6 @@ struct DynamicIslandHeader: View {
             // Handle keyboard shortcut for popover mode
             if Defaults[.enableClipboardManager] && clipboardDisplayMode == .popover {
                 showClipboardPopover.toggle()
-            }
-        }
-        .onChange(of: enablePerAppVolume) { _, newValue in
-            if !newValue {
-                showPerAppVolumePopover = false
-                vm.isPerAppVolumePopoverActive = false
-            }
-        }
-        .onChange(of: enableCaffeinate) { _, newValue in
-            if !newValue {
-                showCaffeinatePopover = false
-                vm.isCaffeinatePopoverActive = false
             }
         }
         .onChange(of: enableTimerFeature) { _, newValue in
