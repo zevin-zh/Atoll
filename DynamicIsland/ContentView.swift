@@ -1378,9 +1378,37 @@ struct ContentView: View {
               .animation(.smooth(duration: 0.25), value: menuBarClearanceOffset)
               .zIndex(2)
               
-              ZStack {
+              ZStack(alignment: .top) {
                   if vm.notchState == .open {
-                      tabPager
+                      Group {
+                          switch coordinator.currentView {
+                          case .home, .shelf:
+                              NotchShelfView()
+                          case .timer:
+                              NotchTimerView()
+                          case .stats:
+                              NotchStatsView()
+                          case .llmUsage:
+                              NotchLLMUsageView()
+                          case .colorPicker:
+                              // 独立的音乐页（取色器功能未启用，借用这个枚举位）
+                              MinimalisticMusicView()
+                          case .notes:
+                              NotchNotesView()
+                          case .clipboard:
+                              NotchClipboardView()
+                          case .terminal:
+                              NotchTerminalView()
+                          case .extensionExperience:
+                              if let payload = currentExtensionTabPayload() {
+                                  ExtensionNotchExperienceTabView(payload: payload)
+                              } else {
+                                  NotchShelfView()
+                              }
+                          }
+                      }
+                      .id(coordinator.currentView)
+                      .transition(tabSwitchTransition)
                   }
               }
               .zIndex(1)
