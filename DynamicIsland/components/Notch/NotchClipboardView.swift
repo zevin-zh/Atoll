@@ -200,7 +200,8 @@ struct NotchClipboardView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary.opacity(0.7))
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // 空状态必须撑住高度：内容为 0 时岛背景会跟着塌成一团甚至消失。
+        .frame(maxWidth: .infinity, minHeight: 140, maxHeight: .infinity)
         .padding(.vertical, 30)
     }
 
