@@ -482,11 +482,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             baseSize.height = 250 // Extra space for timer presets
         }
         
-        baseSize = inlineLyricsAdjustedNotchSize(
-            from: baseSize,
-            isHomeTabActive: coordinator.currentView == .home
-        )
-
         let result = addShadowPadding(
             to: baseSize,
             isMinimalistic: Defaults[.enableMinimalisticUI]

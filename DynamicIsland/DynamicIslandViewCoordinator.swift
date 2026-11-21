@@ -106,7 +106,7 @@ class DynamicIslandViewCoordinator: ObservableObject {
     /// 界面标签顺序与内部 tabOrder 不一定一致，点击时由调用方按可见顺序指定方向。
     var pendingTabDirectionOverride: Bool?
     
-    @Published var currentView: NotchViews = .home {
+    @Published var currentView: NotchViews = .shelf {
         didSet {
             // Track direction before SwiftUI re-renders
             if let override = pendingTabDirectionOverride {
@@ -136,7 +136,7 @@ class DynamicIslandViewCoordinator: ObservableObject {
             if !alwaysShowTabs {
                 openLastTabByDefault = false
                 if TrayDrop.shared.isEmpty || !Defaults[.openShelfByDefault] {
-                    currentView = .home
+                    currentView = .shelf
                 }
             }
         }
@@ -250,23 +250,21 @@ class DynamicIslandViewCoordinator: ObservableObject {
     private func handleTimerDisplayModeChange(_ mode: TimerDisplayMode) {
         guard mode == .popover, currentView == .timer else { return }
         withAnimation(.smooth) {
-            currentView = .home
+            currentView = .shelf
         }
     }
 
     private func handleTimerFeatureToggle(_ isEnabled: Bool) {
         guard !isEnabled, currentView == .timer else { return }
         withAnimation(.smooth) {
-            currentView = .home
+            currentView = .shelf
         }
     }
 
     private func handleMinimalisticModeChange(_ isEnabled: Bool) {
         guard isEnabled else { return }
-        if currentView != .home {
-            withAnimation(.smooth) {
-                currentView = .home
-            }
+        withAnimation(.smooth) {
+            currentView = .shelf
         }
     }
 
@@ -299,7 +297,7 @@ class DynamicIslandViewCoordinator: ObservableObject {
     private func resetExtensionViewIfNeeded() {
         guard currentView == .extensionExperience else { return }
         withAnimation(.smooth) {
-            currentView = .home
+            currentView = .shelf
         }
     }
 
@@ -438,7 +436,7 @@ class DynamicIslandViewCoordinator: ObservableObject {
 
     
     func showEmpty() {
-        currentView = .home
+        currentView = .shelf
     }
     
     // MARK: - Clipboard Management

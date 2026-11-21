@@ -185,16 +185,7 @@ struct ContentView: View {
             return baseSize
         }
 
-        if enableMinimalisticUI,
-           coordinator.currentView == .home,
-           let preferredHeight = extensionMinimalisticPreferredHeight(baseSize: baseSize) {
-            return CGSize(width: baseSize.width, height: preferredHeight)
-        }
-
-        return inlineLyricsAdjustedNotchSize(
-            from: baseSize,
-            isHomeTabActive: coordinator.currentView == .home && vm.notchState == .open
-        )
+        return baseSize
     }
     
 
@@ -265,83 +256,6 @@ struct ContentView: View {
     private let notchAdditionalRowHeadroom: CGFloat = 132
     private let musicControlPauseGrace: TimeInterval = 5
     private let musicControlResumeDelay: TimeInterval = 0.24
-
-    // MARK: - 横向分页容器
-
-    /// 当前可见的标签页（顺序即左右顺序，与标签栏一致）。
-    private var pagerOrder: [NotchViews] {
-        var order: [NotchViews] = []
-        if Defaults[.dynamicShelf] { order.append(.shelf) }
-        if enableTimerFeature && timerDisplayMode == .tab { order.append(.timer) }
-        // 剪贴板是独立的一页，必须单独加入，否则点它会因为查不到下标而回到第一页。
-        if Defaults[.enableClipboardManager] && Defaults[.clipboardDisplayMode] == .separateTab {
-            order.append(.clipboard)
-        }
-        if order.isEmpty { order.append(.shelf) }
-        return order
-    }
-
-    private var pagerIndex: Int {
-        pagerOrder.firstIndex(of: coordinator.currentView) ?? 0
-    }
-
-    /// 自己算偏移量的分页容器。
-    /// 不用 ScrollView 的 `scrollPosition`：那一套在页面内容尺寸变化时
-    /// （剪贴板清空导致高度变化）会把位置丢掉，直接弹回第一页。
-    private var tabPager: some View {
-        GeometryReader { geo in
-            HStack(spacing: 0) {
-                ForEach(pagerOrder, id: \.self) { view in
-                    pagerPage(for: view)
-                        .frame(width: geo.size.width, height: geo.size.height)
-                        .id(view)
-                }
-            }
-            .frame(width: geo.size.width, height: geo.size.height, alignment: .leading)
-            .offset(x: -CGFloat(pagerIndex) * geo.size.width)
-            .animation(.spring(response: 0.36, dampingFraction: 0.86), value: pagerIndex)
-            .gesture(
-                DragGesture(minimumDistance: 12)
-                    .onEnded { value in
-                        let dx = value.translation.width
-                        guard abs(dx) > 40 else { return }
-                        let target = dx < 0 ? pagerIndex + 1 : pagerIndex - 1
-                        guard pagerOrder.indices.contains(target) else { return }
-                        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
-                            coordinator.currentView = pagerOrder[target]
-                        }
-                    }
-            )
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .clipped()
-    }
-
-    @ViewBuilder
-    private func pagerPage(for view: NotchViews) -> some View {
-        switch view {
-        case .home:
-            NotchHomeView(albumArtNamespace: albumArtNamespace)
-        case .shelf:
-            // 与剪贴板页一致：钉到 dynamicNotchSize.height（窗口/背景同源），
-            // 保证两页展开高度完全一致；钉高防止内容为空时面板塌陷。
-            NotchShelfView()
-                .frame(height: dynamicNotchSize.height)
-        case .timer:
-            NotchTimerView()
-        case .clipboard:
-            NotchClipboardView()
-                // 与暂存架页一致：用 dynamicNotchSize（窗口同源），保证两页大小一致。
-                .frame(height: dynamicNotchSize.height)
-        case .extensionExperience:
-            if let payload = currentExtensionTabPayload() {
-                ExtensionNotchExperienceTabView(payload: payload)
-            } else {
-                NotchShelfView()
-                    .frame(height: dynamicNotchSize.height)
-            }
-        }
-    }
 
     // MARK: - Tab switch direction for smooth transitions
     
@@ -1294,7 +1208,7 @@ struct ContentView: View {
                   if vm.notchState == .open {
                       Group {
                           switch coordinator.currentView {
-                          case .home, .shelf:
+                          case .shelf:
                               NotchShelfView()
                           case .timer:
                               NotchTimerView()
@@ -2546,48 +2460,6 @@ struct ContentView: View {
     }
 
     // Estimate the height required for minimalistic overrides (notably web content) and clamp it to the notch bounds.
-    private func extensionMinimalisticPreferredHeight(baseSize: CGSize) -> CGFloat? {
-        guard let configuration = extensionNotchExperienceManager.minimalisticReplacementPayload()?.descriptor.minimalistic else {
-            return nil
-        }
-
-        let minHeight = baseSize.height
-        let maxHeight = baseSize.height + notchAdditionalRowHeadroom
-
-        var contentHeight: CGFloat = 0
-        var blockCount = 0
-
-        if configuration.headline != nil {
-            contentHeight += 24
-            blockCount += 1
-        }
-
-        if configuration.subtitle != nil {
-            contentHeight += 20
-            blockCount += 1
-        }
-
-        if !configuration.sections.isEmpty {
-            let sectionEstimate: CGFloat = 98
-            contentHeight += CGFloat(configuration.sections.count) * sectionEstimate
-            blockCount += configuration.sections.count
-        }
-
-        if let webDescriptor = configuration.webContent {
-            contentHeight += webDescriptor.preferredHeight
-            blockCount += 1
-        }
-
-        guard blockCount > 0 else { return nil }
-
-        let spacingAllowance = CGFloat(max(blockCount - 1, 0)) * 16
-        let topPadding: CGFloat = 10
-        let bottomPadding: CGFloat = configuration.webContent == nil ? 10 : 0
-        let estimatedHeight = contentHeight + spacingAllowance + topPadding + bottomPadding
-
-        let clampedHeight = min(max(estimatedHeight, minHeight), maxHeight)
-        return clampedHeight > minHeight ? clampedHeight : nil
-    }
     
     // MARK: - Gesture Handling
     
@@ -2695,11 +2567,10 @@ struct ContentView: View {
     }
 
     private func canPerformSkipGesture() -> Bool {
-        let canSkipInOpenHome = vm.notchState == .open && coordinator.currentView == .home
         let canSkipInClosedMusic = !Defaults[.openNotchOnHover] && isClosedMusicGestureContext
 
         return enableHorizontalMusicGestures
-            && (canSkipInOpenHome || canSkipInClosedMusic)
+            && canSkipInClosedMusic
             && (!musicManager.isPlayerIdle || musicManager.bundleIdentifier != nil)
             && !lockScreenManager.isLocked
             && !hasAnyActivePopovers()

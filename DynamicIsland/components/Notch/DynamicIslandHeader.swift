@@ -138,7 +138,7 @@ struct DynamicIslandHeader: View {
                                 // close the notch shortly after we switch into the clipboard tab.
                                 AppDelegate.shared?.cancelPendingNotchAutoClose()
                                 // Toggle: a second tap on the clipboard button leaves the tab.
-                                coordinator.currentView = (coordinator.currentView == .clipboard) ? .home : .clipboard
+                                coordinator.currentView = (coordinator.currentView == .clipboard) ? .shelf : .clipboard
                             }
                         }) {
                             Capsule()
@@ -277,7 +277,7 @@ struct DynamicIslandHeader: View {
                     showClipboardPopover.toggle()
                 case .separateTab:
                     if coordinator.currentView == .clipboard {
-                        coordinator.currentView = .home
+                        coordinator.currentView = .shelf
                     } else {
                         coordinator.currentView = .clipboard
                     }
@@ -286,7 +286,7 @@ struct DynamicIslandHeader: View {
                     // we switch into the clipboard tab.
                     AppDelegate.shared?.cancelPendingNotchAutoClose()
                     if coordinator.currentView == .clipboard {
-                        coordinator.currentView = .home
+                        coordinator.currentView = .shelf
                     } else {
                         coordinator.currentView = .clipboard
                     }

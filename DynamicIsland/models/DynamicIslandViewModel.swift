@@ -374,13 +374,7 @@ class DynamicIslandViewModel: NSObject, ObservableObject {
     
     private func calculateDynamicNotchSize() -> CGSize {
         let baseSize = Defaults[.enableMinimalisticUI] ? minimalisticOpenNotchSize(isDynamicIslandMode: shouldUseDynamicIslandMode(for: screen)) : openNotchSize
-        var adjustedSize = baseSize
-        adjustedSize = inlineLyricsAdjustedNotchSize(
-            from: adjustedSize,
-            isHomeTabActive: coordinator.currentView == .home
-        )
-
-        return adjustedSize
+        return baseSize
     }
 
     func close() {
@@ -392,7 +386,7 @@ class DynamicIslandViewModel: NSObject, ObservableObject {
         resetAutoCloseSuppression()
 
         // Set the current view to shelf if it contains files and the user enables openShelfByDefault
-        // Otherwise, if the user has not enabled openLastShelfByDefault, set the view to home
+        // Otherwise, if the user has not enabled openLastTabByDefault, fall back to the shelf
         if !ShelfStateViewModel.shared.isEmpty && Defaults[.openShelfByDefault] && !Defaults[.enableMinimalisticUI] {
             coordinator.currentView = .shelf
         } else if !coordinator.openLastTabByDefault {
