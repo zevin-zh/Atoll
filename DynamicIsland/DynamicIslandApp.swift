@@ -48,7 +48,7 @@ struct DynamicNotchApp: App {
     var body: some Scene {
         MenuBarExtra("Z-island", systemImage: "mountain.2.fill", isInserted: $showMenuBarIcon) {
             LaunchAtLoginToggle()
-            Button("Restart Atoll") {
+            Button("Restart Z-island") {
                 guard let bundleIdentifier = Bundle.main.bundleIdentifier else { return }
 
                 let workspace = NSWorkspace.shared
@@ -64,7 +64,7 @@ struct DynamicNotchApp: App {
 
                 NSApplication.shared.terminate(self)
             }
-            Button("Quit", role: .destructive) {
+            Button("Quit Z-island", role: .destructive) {
                 NSApplication.shared.terminate(self)
             }
             .keyboardShortcut(KeyEquivalent("Q"), modifiers: .command)
@@ -1145,7 +1145,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func exportLogs() {
         let savePanel = NSSavePanel()
-        savePanel.nameFieldStringValue = "Atoll_Logs.zip"
+        savePanel.nameFieldStringValue = "Z-island_Logs.zip"
         savePanel.title = "Export Logs & Crash Reports"
         
         savePanel.begin { response in

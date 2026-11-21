@@ -29,18 +29,18 @@
 	<key>MetalCaptureEnabled</key>
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>Atoll uses AppleScripts to control Spotify, Apple Music, and Notes.</string>
+	<string>Z-island uses AppleScripts to control Spotify, Apple Music, and Notes.</string>
 	<key>NSAppleMusicUsageDescription</key>
-	<string>Atoll uses Apple Music to fetch animated artwork for the lock screen wallpaper.</string>
+	<string>Z-island uses Apple Music to fetch animated artwork for the lock screen wallpaper.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
 	<key>NSAudioCaptureUsageDescription</key>
-	<string>Atoll needs audio capture permission to show the real-time music waveform and to set the volume of individual apps. Audio is only processed live and is never recorded or saved.</string>
+	<string>Z-island needs audio capture permission to show the real-time music waveform and to set the volume of individual apps. Audio is only processed live and is never recorded or saved.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>Atoll needs Bluetooth access to detect when audio devices connect and display their battery status in the HUD.</string>
+	<string>Z-island needs Bluetooth access to detect when audio devices connect and display their battery status in the HUD.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Show calender events inside the notch</string>
 	<key>NSCalendarsUsageDescription</key>
@@ -48,23 +48,23 @@
 	<key>NSCameraUsageDescription</key>
 	<string>We need your camera for Mirror mode</string>
 	<key>NSDesktopFolderUsageDescription</key>
-	<string>Atoll needs access to save screenshots to your desktop.</string>
+	<string>Z-island needs access to save screenshots to your desktop.</string>
 	<key>NSDocumentsFolderUsageDescription</key>
-	<string>Atoll needs access to save and read shelf dragged files.</string>
+	<string>Z-island needs access to save and read shelf dragged files.</string>
 	<key>NSDownloadsFolderUsageDescription</key>
-	<string>Atoll needs access to read files in the downloads folder.</string>
+	<string>Z-island needs access to read files in the downloads folder.</string>
 	<key>NSLocationUsageDescription</key>
-	<string>Atoll uses your location to display accurate lock screen weather.</string>
+	<string>Z-island uses your location to display accurate lock screen weather.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Atoll uses your location to display accurate lock screen weather.</string>
+	<string>Z-island uses your location to display accurate lock screen weather.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Atoll needs microphone access to record voice questions for the AI assistant feature.</string>
+	<string>Z-island needs microphone access to record voice questions for the AI assistant feature.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
-	<string>Atoll needs Reminders access to show your reminders</string>
+	<string>Z-island needs Reminders access to show your reminders</string>
 	<key>NSRemindersUsageDescription</key>
-	<string>Atoll needs Reminders access to show your reminders</string>
+	<string>Z-island needs Reminders access to show your reminders</string>
 	<key>NSScreenCaptureUsageDescription</key>
-	<string>Atoll needs screen recording permission to capture screenshots for the AI assistant feature.</string>
+	<string>Z-island needs screen recording permission to capture screenshots for the AI assistant feature.</string>
 	<key>SUEnableDownloaderService</key>
 	<true/>
 	<key>SUEnableInstallerLauncherService</key>
