@@ -371,7 +371,10 @@ struct ContentView: View {
         case .home:
             NotchHomeView(albumArtNamespace: albumArtNamespace)
         case .shelf:
+            // 与剪贴板页一致：显式钉到 openNotchSize.height，
+            // 否则面板比背景高出阴影边距，底部虚线框会被裁掉。
             NotchShelfView()
+                .frame(height: openNotchSize.height)
         case .timer:
             NotchTimerView()
         case .stats:
@@ -395,6 +398,7 @@ struct ContentView: View {
                 ExtensionNotchExperienceTabView(payload: payload)
             } else {
                 NotchShelfView()
+                    .frame(height: openNotchSize.height)
             }
         }
     }
