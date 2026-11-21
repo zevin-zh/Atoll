@@ -753,8 +753,10 @@ struct ContentView: View {
         NotchLayout()
             // 展开态高度钉死：剪贴板清空后内部内容会塌成 0 高，
             // 而 .background(.black) + .clipShape 跟着内容走，不钉住就会
-            // 塌成直角矩形。页面高度已统一为 openNotchSize.height。
-            .frame(height: vm.notchState == .open ? openNotchSize.height : nil,
+            // 塌成直角矩形。高度来源必须和窗口一致（dynamicNotchSize，
+            // 简约模式下是 minimalisticOpenNotchSize），用全局 openNotchSize
+            // 会比窗口高出阴影边距，底部被窗口裁掉。
+            .frame(height: vm.notchState == .open ? dynamicNotchSize.height : nil,
                    alignment: .top)
             .frame(alignment: .top)
             // Connectivity HUD metrics already describe the complete surface.
