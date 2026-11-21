@@ -453,7 +453,8 @@ class DynamicIslandViewModel: NSObject, ObservableObject {
         if !ShelfStateViewModel.shared.isEmpty && Defaults[.openShelfByDefault] && !Defaults[.enableMinimalisticUI] {
             coordinator.currentView = .shelf
         } else if !coordinator.openLastTabByDefault {
-            coordinator.currentView = .home
+            // 主页面已移除：默认落在暂存架。
+            coordinator.currentView = .shelf
         }
     }
 

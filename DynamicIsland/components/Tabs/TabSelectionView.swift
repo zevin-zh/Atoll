@@ -65,10 +65,6 @@ struct TabSelectionView: View {
     private var tabs: [TabModel] {
         var tabsArray: [TabModel] = []
 
-        if homeTabVisible {
-            tabsArray.append(TabModel(label: "Home", icon: "house.fill", view: .home))
-        }
-
         if Defaults[.dynamicShelf] {
             tabsArray.append(TabModel(label: "Shelf", icon: "tray.fill", view: .shelf))
         }

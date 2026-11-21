@@ -2389,6 +2389,54 @@ struct ContentView: View {
         }
     }
 
+    /// 拖动文件靠近刘海时强制打开暂存架。
+    /// 不依赖 `draggingEntered` 的先后顺序 —— 从面板边缘进入时 SwiftUI 会先接管，
+    /// 那时页面已经被它按"上次的页面"打开了。
+    /// 返回 true 表示当前处于文件拖拽会话，调用方应跳过常规悬停处理。
+    private func handleFileDragIfNeeded() -> Bool {
+        let dragBoard = NSPasteboard(name: .drag)
+        let types = dragBoard.types ?? []
+        let isFileDrag = types.contains(.fileURL)
+
+        guard isFileDrag else {
+            if NotchBridge.shared.isFileDragActive {
+                NotchBridge.shared.isFileDragActive = false
+            }
+            return false
+        }
+
+        guard isPointerNearNotchRegion() else { return true }
+
+        NotchBridge.shared.isFileDragActive = true
+        if vm.notchState == .closed {
+            vm.open()
+        }
+        if coordinator.currentView != .shelf {
+            coordinator.currentView = .shelf
+        }
+        return true
+    }
+
+    /// 刘海附近一块宽松区域（比真实刘海宽、比面板矮一点），用来判断
+    /// "拖着文件靠过来"的意图，避免在屏幕其他地方拖动也弹岛。
+    private func isPointerNearNotchRegion() -> Bool {
+        guard let screen = NSScreen.screens.first(where: { $0.safeAreaInsets.top > 0 }) ?? NSScreen.main else {
+            return false
+        }
+        let location = NSEvent.mouseLocation
+        var notchWidth: CGFloat = 200
+        if let left = screen.auxiliaryTopLeftArea, let right = screen.auxiliaryTopRightArea {
+            notchWidth = right.minX - left.maxX
+        }
+        let width = notchWidth + 320
+        let height: CGFloat = 260
+        let rect = NSRect(x: screen.frame.midX - width / 2,
+                          y: screen.frame.maxY - height,
+                          width: width,
+                          height: height)
+        return rect.contains(location)
+    }
+
     /// 100ms 位置轮询：直接按鼠标坐标判断是否在刘海上，绕开 onHover 的抖动。
     private func startHoverPolling() {
         hoverPollerTask?.cancel()
@@ -2402,9 +2450,10 @@ struct ContentView: View {
     }
 
     private func pollHover() {
-        // 文件拖拽期间由 NotchFileDropCatcher 接管，轮询必须让路，
-        // 否则会抢先按"上次的页面"打开，把暂存架顶掉。
-        guard !NotchBridge.shared.isFileDragActive else { return }
+        // 先判文件拖拽：这里用 NSPasteboard(.drag) 全局检测，不依赖谁先收到
+        // dragEntered。只要拖着文件靠近刘海，就把页面写死成暂存架。
+        if handleFileDragIfNeeded() { return }
+
         guard Defaults[.openNotchOnHover],
               !coordinator.isHoverOpenSuppressed,
               !lockScreenManager.isLocked,
