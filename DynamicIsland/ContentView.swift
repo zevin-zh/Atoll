@@ -341,7 +341,7 @@ struct ContentView: View {
     /// 页面尺寸统一，方向天然跟着手走。
     private var tabPager: some View {
         ScrollView(.horizontal) {
-            LazyHStack(spacing: 0) {
+            HStack(spacing: 0) {
                 ForEach(pagerOrder, id: \.self) { view in
                     pagerPage(for: view)
                         .containerRelativeFrame(.horizontal)
@@ -350,7 +350,7 @@ struct ContentView: View {
             }
             .scrollTargetLayout()
         }
-        .scrollTargetBehavior(.viewAligned)
+        .scrollTargetBehavior(.paging)
         .scrollPosition(id: pagerSelection)
         .scrollIndicators(.hidden)
         .scrollDisabled(false)
