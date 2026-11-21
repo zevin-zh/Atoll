@@ -349,25 +349,6 @@ enum ScreenAssistantDisplayMode: String, CaseIterable, Codable, Defaults.Seriali
     }
 }
 
-enum ColorPickerDisplayMode: String, CaseIterable, Codable, Defaults.Serializable {
-    case popover = "popover"     // Traditional popover attached to button
-    case panel = "panel"         // Floating panel near notch
-    
-    var displayName: String {
-        switch self {
-        case .popover: return String(localized: "Popover")
-        case .panel: return String(localized: "Panel")
-        }
-    }
-    
-    var description: String {
-        switch self {
-        case .popover: return String(localized: "Shows color picker as a dropdown attached to the color picker button")
-        case .panel: return String(localized: "Shows color picker in a floating panel near the notch")
-        }
-    }
-}
-
 enum ThirdPartyDDCProvider: String, CaseIterable, Codable, Defaults.Serializable, Identifiable {
     case betterDisplay
     case lunar
@@ -1278,42 +1259,6 @@ extension Defaults.Keys {
     static let useBluetoothHUD3DIcon = Key<Bool>("useBluetoothHUD3DIcon", default: true)
     static let showAirPodsListeningModeChanges = Key<Bool>("showAirPodsListeningModeChanges", default: true)
     
-    // MARK: Stats Feature
-    static let enableStatsFeature = Key<Bool>("enableStatsFeature", default: false)
-    static let enableLLMUsageFeature = Key<Bool>("enableLLMUsageFeature", default: false)
-    static let enableClaudeProvider = Key<Bool>("enableClaudeProvider", default: true)
-    static let enableCodexProvider = Key<Bool>("enableCodexProvider", default: true)
-    static let enableCursorProvider = Key<Bool>("enableCursorProvider", default: true)
-    static let enableAntigravityProvider = Key<Bool>("enableAntigravityProvider", default: true)
-    static let enableNewAPIProvider = Key<Bool>("enableNewAPIProvider", default: false)
-    static let newAPIAccounts = Key<[NewAPIAccount]>("newAPIAccounts", default: [])
-    static let autoStartStatsMonitoring = Key<Bool>("autoStartStatsMonitoring", default: true)
-    static let statsStopWhenNotchCloses = Key<Bool>("statsStopWhenNotchCloses", default: true)
-    static let statsUpdateInterval = Key<Double>("statsUpdateInterval", default: 1.0)
-    static let showCpuGraph = Key<Bool>("showCpuGraph", default: true)
-    static let showMemoryGraph = Key<Bool>("showMemoryGraph", default: true)
-    static let showGpuGraph = Key<Bool>("showGpuGraph", default: true)
-    static let showNetworkGraph = Key<Bool>("showNetworkGraph", default: false)
-    static let showDiskGraph = Key<Bool>("showDiskGraph", default: false)
-    static let cpuTemperatureUnit = Key<LockScreenWeatherTemperatureUnit>("cpuTemperatureUnit", default: .matchingSystemPreference)
-    
-    // MARK: Terminal Feature
-    static let enableTerminalFeature = Key<Bool>("enableTerminalFeature", default: false)
-    static let terminalShellPath = Key<String>("terminalShellPath", default: "/bin/zsh")
-    static let terminalFontFamily = Key<String>("terminalFontFamily", default: "")
-    static let terminalFontSize = Key<Double>("terminalFontSize", default: 12.0)
-    static let terminalOpacity = Key<Double>("terminalOpacity", default: 1.0)
-    static let terminalMaxHeightFraction = Key<Double>("terminalMaxHeightFraction", default: 0.4)
-    static let terminalCursorStyle = Key<String>("terminalCursorStyle", default: "blinkBlock")
-    static let terminalScrollbackLines = Key<Int>("terminalScrollbackLines", default: 1000)
-    static let terminalOptionAsMeta = Key<Bool>("terminalOptionAsMeta", default: true)
-    static let terminalMouseReporting = Key<Bool>("terminalMouseReporting", default: true)
-    static let terminalBoldAsBright = Key<Bool>("terminalBoldAsBright", default: true)
-    static let terminalBackgroundColor = Key<Color>("terminalBackgroundColor", default: .black)
-    static let terminalForegroundColor = Key<Color>("terminalForegroundColor", default: .white)
-    static let terminalCursorColor = Key<Color>("terminalCursorColor", default: Color(.selectedControlColor))
-    static let terminalStickyMode = Key<Bool>("terminalStickyMode", default: false)
-    
     // MARK: Timer Feature
     static let enableTimerFeature = Key<Bool>("enableTimerFeature", default: true)
     static let timerDisplayMode = Key<TimerDisplayMode>("timerDisplayMode", default: .tab)
@@ -1348,13 +1293,6 @@ extension Defaults.Keys {
     static let caffeinateDefaultDuration = Key<CaffeinateDuration>("caffeinateDefaultDuration", default: .indefinite)
     static let caffeinateKeepsDisplayAwake = Key<Bool>("caffeinateKeepsDisplayAwake", default: true)
 
-    // MARK: ColorPicker Feature
-    static let enableColorPickerFeature = Key<Bool>("enableColorPickerFeature", default: true)
-    static let showColorFormats = Key<Bool>("showColorFormats", default: true)
-    static let colorPickerDisplayMode = Key<ColorPickerDisplayMode>("colorPickerDisplayMode", default: .panel)
-    static let colorHistorySize = Key<Int>("colorHistorySize", default: 10)
-    static let showColorPickerIcon = Key<Bool>("showColorPickerIcon", default: true)
-    
     // MARK: Clipboard Feature
     static let enableClipboardManager = Key<Bool>("enableClipboardManager", default: true)
     static let clipboardHistorySize = Key<Int>("clipboardHistorySize", default: 3)

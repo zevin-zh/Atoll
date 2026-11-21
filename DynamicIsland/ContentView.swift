@@ -47,7 +47,6 @@ struct ContentView: View {
     @ObservedObject var timerManager = TimerManager.shared
     @ObservedObject var reminderManager = ReminderLiveActivityManager.shared
     @ObservedObject var batteryModel = BatteryStatusViewModel.shared
-    @ObservedObject var statsManager = StatsManager.shared
     @ObservedObject var recordingManager = ScreenRecordingManager.shared
     @ObservedObject var privacyManager = PrivacyIndicatorManager.shared
     @ObservedObject var doNotDisturbManager = DoNotDisturbManager.shared
@@ -65,12 +64,6 @@ struct ContentView: View {
     @State private var downloadManager = DownloadManager.shared
     @ObservedObject var shelfState = ShelfStateViewModel.shared
     
-    @Default(.enableStatsFeature) var enableStatsFeature
-    @Default(.showCpuGraph) var showCpuGraph
-    @Default(.showMemoryGraph) var showMemoryGraph
-    @Default(.showGpuGraph) var showGpuGraph
-    @Default(.showNetworkGraph) var showNetworkGraph
-    @Default(.showDiskGraph) var showDiskGraph
     @Default(.enableReminderLiveActivity) var enableReminderLiveActivity
     @Default(.enableTimerFeature) var enableTimerFeature
     @Default(.timerDisplayMode) var timerDisplayMode
@@ -95,7 +88,6 @@ struct ContentView: View {
     @Default(.showStandardMediaControls) var showStandardMediaControls
     @Default(.externalDisplayStyle) var externalDisplayStyle
     @Default(.hideNonNotchUntilHover) var hideNonNotchUntilHover
-    @Default(.terminalStickyMode) var terminalStickyMode
     
     // Battery settings reactivity
     @Default(.showPowerStatusNotifications) var showPowerStatusNotifications
@@ -188,13 +180,6 @@ struct ContentView: View {
         if coordinator.currentView == .timer {
             return CGSize(width: baseSize.width, height: 250) // Extra height for timer presets
         }
-        if coordinator.currentView == .terminal {
-            // Dynamic height: up to terminalMaxHeightFraction of screen, min 300pt
-            let screenHeight = NSScreen.main?.visibleFrame.height ?? 800
-            let maxFraction = Defaults[.terminalMaxHeightFraction]
-            let terminalHeight = min(screenHeight * maxFraction, max(300, screenHeight * maxFraction))
-            return CGSize(width: baseSize.width, height: terminalHeight)
-        }
 
         if coordinator.currentView == .extensionExperience {
             if let preferredHeight = extensionTabPreferredHeight(baseSize: baseSize) {
@@ -209,21 +194,10 @@ struct ContentView: View {
             return CGSize(width: baseSize.width, height: preferredHeight)
         }
 
-        guard coordinator.currentView == .stats else {
-            return inlineLyricsAdjustedNotchSize(
-                from: baseSize,
-                isHomeTabActive: coordinator.currentView == .home && vm.notchState == .open
-            )
-        }
-        
-        let rows = statsRowCount()
-        if rows <= 1 {
-            return baseSize
-        }
-        
-        let additionalRows = max(rows - 1, 0)
-        let extraHeight = CGFloat(additionalRows) * statsAdditionalRowHeight
-        return CGSize(width: baseSize.width, height: baseSize.height + extraHeight)
+        return inlineLyricsAdjustedNotchSize(
+            from: baseSize,
+            isHomeTabActive: coordinator.currentView == .home && vm.notchState == .open
+        )
     }
     
 
@@ -236,7 +210,6 @@ struct ContentView: View {
     @State private var lastHapticTime: Date = Date()
     @State private var hoverClickMonitor: Any?
     @State private var hoverClickLocalMonitor: Any?
-    @State private var stickyTerminalClickMonitor: Any?
     @State private var hiddenEdgeHoverPollingTask: Task<Void, Never>?
     @State private var isHoveringClosedMusicWaveformControl: Bool = false
 
@@ -292,7 +265,7 @@ struct ContentView: View {
     }
     
     private let zeroHeightHoverPadding: CGFloat = 10
-    private let statsAdditionalRowHeight: CGFloat = statsSecondRowContentHeight + statsGridSpacingHeight
+    private let notchAdditionalRowHeadroom: CGFloat = 132
     private let musicControlPauseGrace: TimeInterval = 5
     private let musicControlResumeDelay: TimeInterval = 0.24
 
@@ -303,14 +276,11 @@ struct ContentView: View {
         var order: [NotchViews] = []
         if Defaults[.dynamicShelf] { order.append(.shelf) }
         if enableTimerFeature && timerDisplayMode == .tab { order.append(.timer) }
-        if Defaults[.enableStatsFeature] { order.append(.stats) }
-        if Defaults[.enableLLMUsageFeature] { order.append(.llmUsage) }
         if Defaults[.enableNotes] { order.append(.notes) }
         // 剪贴板是独立的一页，必须单独加入，否则点它会因为查不到下标而回到第一页。
         if Defaults[.enableClipboardManager] && Defaults[.clipboardDisplayMode] == .separateTab {
             order.append(.clipboard)
         }
-        if Defaults[.enableTerminalFeature] { order.append(.terminal) }
         if order.isEmpty { order.append(.shelf) }
         return order
     }
@@ -363,12 +333,6 @@ struct ContentView: View {
                 .frame(height: dynamicNotchSize.height)
         case .timer:
             NotchTimerView()
-        case .stats:
-            NotchStatsView()
-        case .llmUsage:
-            NotchLLMUsageView()
-        case .colorPicker:
-            NotchColorPickerView()
         case .notes:
             // 固定高度：内容为空时也不会把岛背景带走。
             NotchNotesView()
@@ -377,8 +341,6 @@ struct ContentView: View {
             NotchClipboardView()
                 // 与暂存架页一致：用 dynamicNotchSize（窗口同源），保证两页大小一致。
                 .frame(height: dynamicNotchSize.height)
-        case .terminal:
-            NotchTerminalView()
         case .extensionExperience:
             if let payload = currentExtensionTabPayload() {
                 ExtensionNotchExperienceTabView(payload: payload)
@@ -855,15 +817,6 @@ struct ContentView: View {
                 }
             })
             .onChange(of: vm.notchState) { _, newState in
-                // Update smart monitoring based on notch state
-                if enableStatsFeature {
-                    let currentViewString = coordinator.currentView == .stats ? "stats" : "other"
-                    statsManager.updateMonitoringState(
-                        notchIsOpen: newState == .open,
-                        currentView: currentViewString
-                    )
-                }
-
                 // Reset hover state when notch state changes
                 if newState == .closed && isHovering {
                     withAnimation {
@@ -873,23 +826,8 @@ struct ContentView: View {
                 if newState != .closed {
                     isHoveringClosedMusicWaveformControl = false
                 }
-                if newState == .closed {
-                    removeStickyTerminalClickMonitor()
-                } else {
-                    // Install the outside-click monitor for terminal opens that don't
-                    // change `currentView` (e.g. shortcut re-opening with the terminal
-                    // tab already selected, where the cursor never enters the notch).
-                    syncStickyTerminalOutsideClickMonitor()
-                }
             }
             .onChange(of: vm.isBatteryPopoverActive) { _, newPopoverState in
-                runAfter(0.1) {
-                    if !newPopoverState && !isHovering && vm.notchState == .open && !shouldPreventAutoClose() {
-                        vm.close()
-                    }
-                }
-            }
-            .onChange(of: vm.isStatsPopoverActive) { _, newPopoverState in
                 runAfter(0.1) {
                     if !newPopoverState && !isHovering && vm.notchState == .open && !shouldPreventAutoClose() {
                         vm.close()
@@ -920,16 +858,6 @@ struct ContentView: View {
                         }
                     }
                 }
-            }
-            .onChange(of: coordinator.currentView) { _, newValue in
-                if enableStatsFeature {
-                    let currentViewString = newValue == .stats ? "stats" : "other"
-                    statsManager.updateMonitoringState(
-                        notchIsOpen: vm.notchState == .open,
-                        currentView: currentViewString
-                    )
-                }
-                syncStickyTerminalOutsideClickMonitor()
             }
             .sensoryFeedback(.alignment, trigger: haptics)
             .contextMenu {
@@ -989,9 +917,6 @@ struct ContentView: View {
                 // Deterministic teardown for borderless panels (`.onDisappear` is
                 // unreliable); the window-cleanup path calls this before closing.
                 vm.onViewTeardown = { performViewTeardown() }
-            }
-            .onChange(of: terminalStickyMode) { _, _ in
-                syncStickyTerminalOutsideClickMonitor()
             }
             .onChange(of: vm.notchState) { _, state in
                 if state == .open {
@@ -1383,18 +1308,10 @@ struct ContentView: View {
                               NotchShelfView()
                           case .timer:
                               NotchTimerView()
-                          case .stats:
-                              NotchStatsView()
-                          case .llmUsage:
-                              NotchLLMUsageView()
-                          case .colorPicker:
-                              NotchColorPickerView()
                           case .notes:
                               NotchNotesView()
                           case .clipboard:
                               NotchClipboardView()
-                          case .terminal:
-                              NotchTerminalView()
                           case .extensionExperience:
                               if let payload = currentExtensionTabPayload() {
                                   ExtensionNotchExperienceTabView(payload: payload)
@@ -2245,7 +2162,6 @@ struct ContentView: View {
         menuBarLayout.stopTracking()
         hoverTask?.cancel()
         stopHoverClickMonitor()
-        removeStickyTerminalClickMonitor()
         stopHiddenEdgeHoverPolling()
         cancelMusicControlWindowSync()
         hideMusicControlWindow()
@@ -2348,46 +2264,6 @@ struct ContentView: View {
         }
     }
 
-    /// Installs the global outside-click monitor whenever the Terminal tab is open
-    /// (e.g. keyboard-opened terminal), regardless of sticky mode.
-    ///
-    /// Sticky mode only controls whether the terminal closes when the cursor leaves
-    /// the notch (see `shouldPreventAutoClose`).  An outside click should always close
-    /// the terminal — this covers the case where the terminal is opened via the
-    /// shortcut and the cursor never enters the notch, so there's no hover-out event
-    /// to trigger the normal auto-close.
-    ///
-    /// While the cursor is hovering inside the notch, hover handling owns close
-    /// behavior, so the monitor is not installed; it is re-synced on hover-out.
-    private func syncStickyTerminalOutsideClickMonitor() {
-        guard vm.notchState == .open, coordinator.currentView == .terminal, !isHovering else {
-            removeStickyTerminalClickMonitor()
-            return
-        }
-        installStickyTerminalClickMonitor()
-    }
-
-    private func installStickyTerminalClickMonitor() {
-        guard stickyTerminalClickMonitor == nil else { return }
-        stickyTerminalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown]) { [weak vm] _ in
-            Task { @MainActor in
-                guard let vm, vm.notchState == .open else { return }
-                let clickLocation = NSEvent.mouseLocation
-                if self.isPointInsideNotchWindow(clickLocation) {
-                    return
-                }
-                vm.close()
-            }
-        }
-    }
-
-    private func removeStickyTerminalClickMonitor() {
-        if let stickyTerminalClickMonitor {
-            NSEvent.removeMonitor(stickyTerminalClickMonitor)
-            self.stickyTerminalClickMonitor = nil
-        }
-    }
-
     // MARK: - Hover Management
     
     /// Handle hover state changes with debouncing
@@ -2410,7 +2286,6 @@ struct ContentView: View {
             if !recordingLiveActivityVisibleOnClosedNotch {
                 startHoverClickMonitor()
             }
-            removeStickyTerminalClickMonitor()
         } else {
             stopHoverClickMonitor()
             if isHoveringClosedMusicWaveformControl {
@@ -2578,12 +2453,6 @@ struct ContentView: View {
 
         if vm.notchState == .open && !shouldPreventAutoClose() {
             vm.close()
-        } else if vm.notchState == .open
-                    && Defaults[.terminalStickyMode]
-                    && coordinator.currentView == .terminal {
-            // Re-sync monitor state through one code path to avoid
-            // monitor lifecycle races between hover and state updates.
-            syncStickyTerminalOutsideClickMonitor()
         }
     }
 
@@ -2657,8 +2526,6 @@ struct ContentView: View {
     private func hasAnyActivePopovers() -> Bool {
      return vm.isBatteryPopoverActive || 
          vm.isClipboardPopoverActive || 
-         vm.isColorPickerPopoverActive || 
-         vm.isStatsPopoverActive ||
          vm.isTimerPopoverActive ||
          vm.isPerAppVolumePopoverActive ||
          vm.isCaffeinatePopoverActive ||
@@ -2671,7 +2538,7 @@ struct ContentView: View {
         // Without this, the hover-exit timer closes the panel mid-drag, tearing
         // down the NSView that is acting as the drag source and cancelling the
         // session — an independent second cause of "drag-out doesn't work".
-        coordinator.firstLaunch || hasAnyActivePopovers() || vm.isAutoCloseSuppressed || ShelfSelectionModel.shared.isDragging || ClipboardManager.shared.isDraggingItem || SharingStateManager.shared.preventNotchClose || (Defaults[.terminalStickyMode] && coordinator.currentView == .terminal)
+        coordinator.firstLaunch || hasAnyActivePopovers() || vm.isAutoCloseSuppressed || ShelfSelectionModel.shared.isDragging || ClipboardManager.shared.isDraggingItem || SharingStateManager.shared.preventNotchClose
     }
     
     // Helper to prevent rapid haptic feedback
@@ -2683,23 +2550,6 @@ struct ContentView: View {
         }
     }
     
-    // Helper to check if stats tab has 4+ graphs (needs expanded height)
-    private func enabledStatsGraphCount() -> Int {
-        var enabledCount = 0
-        if showCpuGraph { enabledCount += 1 }
-        if showMemoryGraph { enabledCount += 1 }
-        if showGpuGraph { enabledCount += 1 }
-        if showNetworkGraph { enabledCount += 1 }
-        if showDiskGraph { enabledCount += 1 }
-        return enabledCount
-    }
-
-    private func statsRowCount() -> Int {
-        let count = enabledStatsGraphCount()
-        if count == 0 { return 0 }
-        return count <= 3 ? 1 : 2
-    }
-
     private func currentExtensionTabPayload() -> ExtensionNotchExperiencePayload? {
         guard Defaults[.enableThirdPartyExtensions],
               Defaults[.enableExtensionNotchExperiences],
@@ -2718,7 +2568,7 @@ struct ContentView: View {
             return nil
         }
         let minHeight = baseSize.height
-        let maxHeight = baseSize.height + statsAdditionalRowHeight
+        let maxHeight = baseSize.height + notchAdditionalRowHeadroom
         return min(max(preferred, minHeight), maxHeight)
     }
 
@@ -2729,7 +2579,7 @@ struct ContentView: View {
         }
 
         let minHeight = baseSize.height
-        let maxHeight = baseSize.height + statsAdditionalRowHeight
+        let maxHeight = baseSize.height + notchAdditionalRowHeadroom
 
         var contentHeight: CGFloat = 0
         var blockCount = 0

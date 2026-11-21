@@ -577,10 +577,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Use a consistent height for different view types
         if coordinator.currentView == .timer {
             baseSize.height = 250 // Extra space for timer presets
-        } else if coordinator.currentView == .terminal {
-            let screenHeight = NSScreen.main?.visibleFrame.height ?? 800
-            let maxFraction = Defaults[.terminalMaxHeightFraction]
-            baseSize.height = min(screenHeight * maxFraction, max(300, screenHeight * maxFraction))
         }
         
         baseSize = inlineLyricsAdjustedNotchSize(
@@ -588,13 +584,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             isHomeTabActive: coordinator.currentView == .home
         )
 
-        let adjustedContentSize = statsAdjustedNotchSize(
-            from: baseSize,
-            isStatsTabActive: coordinator.currentView == .stats,
-            secondRowProgress: coordinator.statsSecondRowExpansion
-        )
         let result = addShadowPadding(
-            to: adjustedContentSize,
+            to: baseSize,
             isMinimalistic: Defaults[.enableMinimalisticUI]
         )
 
@@ -858,45 +849,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
         
-        // Observe stats settings changes - use debounced updates
-        Defaults.publisher(.enableStatsFeature, options: []).sink { [weak self] _ in
-            self?.debouncedUpdateWindowSize()
-        }.store(in: &cancellables)
-        
-        Defaults.publisher(.showCpuGraph, options: []).sink { [weak self] _ in
-            self?.debouncedUpdateWindowSize()
-        }.store(in: &cancellables)
-        
-        Defaults.publisher(.showMemoryGraph, options: []).sink { [weak self] _ in
-            self?.debouncedUpdateWindowSize()
-        }.store(in: &cancellables)
-        
-        Defaults.publisher(.showGpuGraph, options: []).sink { [weak self] _ in
-            self?.debouncedUpdateWindowSize()
-        }.store(in: &cancellables)
-        
-        Defaults.publisher(.showNetworkGraph, options: []).sink { [weak self] _ in
-            self?.debouncedUpdateWindowSize()
-        }.store(in: &cancellables)
-        
-        Defaults.publisher(.showDiskGraph, options: []).sink { [weak self] _ in
-            self?.debouncedUpdateWindowSize()
-        }.store(in: &cancellables)
-
         Defaults.publisher(.openNotchWidth, options: []).sink { [weak self] _ in
             self?.debouncedUpdateWindowSize()
         }.store(in: &cancellables)
-
-        // Observe terminal settings changes
-        Defaults.publisher(.enableTerminalFeature, options: []).sink { [weak self] _ in
-            self?.debouncedUpdateWindowSize()
-        }.store(in: &cancellables)
-
-        Defaults.publisher(.terminalMaxHeightFraction, options: []).sink { [weak self] _ in
-            self?.debouncedUpdateWindowSize()
-        }.store(in: &cancellables)
-
-        MemoryUsageMonitor.shared.startMonitoring()
 
         ReminderLiveActivityManager.shared.$activeWindowReminders
             .receive(on: RunLoop.main)
@@ -928,12 +883,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }.store(in: &cancellables)
 
         Defaults.publisher(.enableClipboardManager, options: []).sink { [weak self] _ in
-            Task { @MainActor [weak self] in
-                self?.updateFeatureShortcutAvailability()
-            }
-        }.store(in: &cancellables)
-
-        Defaults.publisher(.enableColorPickerFeature, options: []).sink { [weak self] _ in
             Task { @MainActor [weak self] in
                 self?.updateFeatureShortcutAvailability()
             }
@@ -1485,42 +1434,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        KeyboardShortcuts.onKeyDown(for: .colorPickerPanel) {
-            guard Defaults[.enableShortcuts], Defaults[.enableColorPickerFeature] else { return }
-            ColorPickerPanelManager.shared.toggleColorPickerPanel()
-        }
-
         KeyboardShortcuts.onKeyDown(for: .toggleCaffeinate) {
             guard Defaults[.enableShortcuts], Defaults[.enableCaffeinate] else { return }
             CaffeinateManager.shared.toggle()
-        }
-
-        KeyboardShortcuts.onKeyDown(for: .toggleTerminalTab) { [weak self] in
-            guard let self else { return }
-            guard Defaults[.enableShortcuts], Defaults[.enableTerminalFeature] else { return }
-
-            if vm.notchState == .closed {
-                closeNotchWorkItem?.cancel()
-                closeNotchWorkItem = nil
-                vm.open()
-                coordinator.currentView = .terminal
-                TerminalManager.shared.refreshTerminalAppearanceIfNeeded()
-                TerminalManager.shared.focusTerminalIfPossible()
-                TerminalManager.shared.refreshTerminalAppearanceIfNeeded()
-            } else {
-                if coordinator.currentView == .terminal {
-                    coordinator.suppressHoverOpen()
-                    TerminalManager.shared.resignTerminalFirstResponderIfNeeded()
-                    vm.close()
-                } else {
-                    closeNotchWorkItem?.cancel()
-                    closeNotchWorkItem = nil
-                    coordinator.currentView = .terminal
-                    TerminalManager.shared.refreshTerminalAppearanceIfNeeded()
-                    TerminalManager.shared.focusTerminalIfPossible()
-                    TerminalManager.shared.refreshTerminalAppearanceIfNeeded()
-                }
-            }
         }
 
         KeyboardShortcuts.onKeyDown(for: .screenAssistantPanel) { [weak self] in
@@ -1547,9 +1463,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func updateFeatureShortcutAvailability() {
         updateShortcut(.startDemoTimer, isEnabled: Defaults[.enableShortcuts] && Defaults[.enableTimerFeature])
         updateShortcut(.clipboardHistoryPanel, isEnabled: Defaults[.enableShortcuts] && Defaults[.enableClipboardManager])
-        updateShortcut(.colorPickerPanel, isEnabled: Defaults[.enableShortcuts] && Defaults[.enableColorPickerFeature])
         updateShortcut(.screenAssistantPanel, isEnabled: Defaults[.enableShortcuts] && Defaults[.enableScreenAssistant])
-        updateShortcut(.toggleTerminalTab, isEnabled: Defaults[.enableShortcuts] && Defaults[.enableTerminalFeature])
         updateShortcut(.toggleCaffeinate, isEnabled: Defaults[.enableShortcuts] && Defaults[.enableCaffeinate])
     }
 
