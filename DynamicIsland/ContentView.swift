@@ -376,9 +376,13 @@ struct ContentView: View {
         case .colorPicker:
             NotchColorPickerView()
         case .notes:
+            // 固定高度：内容为空时也不会把岛背景带走
+            // （原设计里剪贴板/笔记就是这个高度）。
             NotchNotesView()
+                .frame(height: NotesLayoutState.list.preferredHeight)
         case .clipboard:
             NotchClipboardView()
+                .frame(height: NotesLayoutState.list.preferredHeight)
         case .terminal:
             NotchTerminalView()
         case .extensionExperience:
