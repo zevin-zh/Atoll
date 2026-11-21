@@ -575,7 +575,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         var baseSize = Defaults[.enableMinimalisticUI] ? minimalisticOpenNotchSize(isDynamicIslandMode: shouldUseDynamicIslandMode(for: vm.screen)) : openNotchSize
         
         // Use a consistent height for different view types
-        if coordinator.currentView == .timer {
+        if coordinator.currentView == .shelf {
+            // 暂存架页面拉大：宽 +35%、高 +90pt，能同时看到更多文件，
+            // 隔空投送块也不会把文件区挤成一条。
+            baseSize.width *= 1.35
+            baseSize.height += 90
+        } else if coordinator.currentView == .timer {
             baseSize.height = 250 // Extra space for timer presets
         } else if coordinator.currentView == .notes || coordinator.currentView == .clipboard {
             // 页面尺寸统一：剪贴板/笔记与暂存架同高（不按内容撑开）。
