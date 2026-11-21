@@ -358,6 +358,7 @@
 				F54406E42CD4987A00C7AFD9 /* Frameworks */,
 				F54406E52CD4987A00C7AFD9 /* Resources */,
 				7EA69B1B2F5AE13500EB2D16 /* CopyFiles */,
+				7E6118302F9000010000AA11 /* Patch Bundle Name */,
 				7EFAA8AA2F6F12F3000A99E8 /* ShellScript */,
 			);
 			buildRules = (
@@ -473,6 +474,25 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		7E6118302F9000010000AA11 /* Patch Bundle Name */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Patch Bundle Name";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# CFBundleName is regenerated from PRODUCT_NAME (Atoll) by the\n# Info.plist generator and has no INFOPLIST_KEY override. Patch the\n# display-only bundle name to Z-island without touching PRODUCT_NAME\n# or the bundle identifier.\nPLIST=\"$BUILT_PRODUCTS_DIR/$INFOPLIST_PATH\"\n/usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName Z-island' \"$PLIST\" || /usr/libexec/PlistBuddy -c 'Add :CFBundleDisplayName string Z-island' \"$PLIST\"\n/usr/libexec/PlistBuddy -c 'Set :CFBundleName Z-island' \"$PLIST\" || /usr/libexec/PlistBuddy -c 'Add :CFBundleName string Z-island' \"$PLIST\"\n";
+		};
 		7EFAA8AA2F6F12F3000A99E8 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -791,9 +811,8 @@
 					"$(PROJECT_DIR)/Frameworks",
 					"$(PROJECT_DIR)/mediaremote-adapter",
 				);
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = DynamicIsland/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Atoll;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_MetalCaptureEnabled = YES;
@@ -866,9 +885,8 @@
 					"$(PROJECT_DIR)/Frameworks",
 					"$(PROJECT_DIR)/mediaremote-adapter",
 				);
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = DynamicIsland/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Atoll;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_MetalCaptureEnabled = YES;

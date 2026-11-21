@@ -20,6 +20,7 @@ import AVFoundation
 import Combine
 import Defaults
 import KeyboardShortcuts
+import ServiceManagement
 import Sparkle
 import SwiftUI
 import SkyLightWindow
@@ -45,9 +46,8 @@ struct DynamicNotchApp: App {
     }
 
     var body: some Scene {
-        MenuBarExtra("dynamic.island", systemImage: "mountain.2.fill", isInserted: $showMenuBarIcon) {
-            CheckForUpdatesView(updater: updaterController.updater)
-            Divider()
+        MenuBarExtra("Z-island", systemImage: "mountain.2.fill", isInserted: $showMenuBarIcon) {
+            LaunchAtLoginToggle()
             Button("Restart Atoll") {
                 guard let bundleIdentifier = Bundle.main.bundleIdentifier else { return }
 
@@ -68,6 +68,40 @@ struct DynamicNotchApp: App {
                 NSApplication.shared.terminate(self)
             }
             .keyboardShortcut(KeyEquivalent("Q"), modifiers: .command)
+        }
+    }
+}
+
+/// Menu-bar toggle that mirrors and controls the app's macOS login item
+/// (System Settings › General › Login Items). Does not register anything
+/// at launch — it only reflects the current SMAppService state.
+struct LaunchAtLoginToggle: View {
+    @State private var isLoginItemEnabled = SMAppService.mainApp.status == .enabled
+
+    var body: some View {
+        Toggle(isOn: Binding(
+            get: { SMAppService.mainApp.status == .enabled },
+            set: { newValue in
+                do {
+                    if newValue {
+                        try SMAppService.mainApp.register()
+                    } else {
+                        try SMAppService.mainApp.unregister()
+                    }
+                } catch {
+                    // Registration can fail (e.g. missing entitlement); fall
+                    // back to whatever state the system actually reports.
+                    NSLog("LaunchAtLogin toggle failed: \(error)")
+                }
+                isLoginItemEnabled = SMAppService.mainApp.status == .enabled
+            }
+        )) {
+            Label("Launch at Login", systemImage: "poweron")
+        }
+        .onAppear {
+            // Re-sync with the system every time the menu opens, in case the
+            // user toggled the login item from System Settings.
+            isLoginItemEnabled = SMAppService.mainApp.status == .enabled
         }
     }
 }
