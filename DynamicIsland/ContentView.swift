@@ -319,8 +319,10 @@ struct ContentView: View {
         if enableTimerFeature && timerDisplayMode == .tab { order.append(.timer) }
         if Defaults[.enableStatsFeature] { order.append(.stats) }
         if Defaults[.enableLLMUsageFeature] { order.append(.llmUsage) }
-        if Defaults[.enableNotes] || (Defaults[.enableClipboardManager] && Defaults[.clipboardDisplayMode] == .separateTab) {
-            order.append(.notes)
+        if Defaults[.enableNotes] { order.append(.notes) }
+        // 剪贴板是独立的一页，必须单独加入，否则点它会因为查不到下标而回到第一页。
+        if Defaults[.enableClipboardManager] && Defaults[.clipboardDisplayMode] == .separateTab {
+            order.append(.clipboard)
         }
         if Defaults[.enableTerminalFeature] { order.append(.terminal) }
         if order.isEmpty { order.append(.shelf) }
