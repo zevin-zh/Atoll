@@ -1391,8 +1391,7 @@ struct ContentView: View {
                           case .llmUsage:
                               NotchLLMUsageView()
                           case .colorPicker:
-                              // 独立的音乐页（取色器功能未启用，借用这个枚举位）
-                              MinimalisticMusicView()
+                              NotchColorPickerView()
                           case .notes:
                               NotchNotesView()
                           case .clipboard:

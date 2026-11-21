@@ -69,9 +69,8 @@ struct TabSelectionView: View {
             tabsArray.append(TabModel(label: "Shelf", icon: "tray.fill", view: .shelf))
         }
 
-        // 简约模式：暂存架 / 音乐 / 剪贴板 三个页面。
+        // 简约模式：只保留暂存架 + 剪贴板。
         if Defaults[.enableMinimalisticUI] {
-            tabsArray.append(TabModel(label: "Music", icon: "music.note", view: .colorPicker))
             if Defaults[.enableNotes] || (Defaults[.enableClipboardManager] && Defaults[.clipboardDisplayMode] == .separateTab) {
                 tabsArray.append(TabModel(label: "Clipboard", icon: "doc.on.clipboard", view: .clipboard))
             }
@@ -133,8 +132,7 @@ struct TabSelectionView: View {
                     // 渲染顺序不同（中间有被关掉的模块），用它判断会左右颠倒。
                     let oldIndex = tabs.firstIndex(where: { $0.view == coordinator.currentView }) ?? 0
                     let newIndex = tabs.firstIndex(where: { $0.id == tab.id }) ?? 0
-                    // 反馈反馈：原来前进方向和实际相反，这里取反。
-                    coordinator.pendingTabDirectionOverride = newIndex < oldIndex
+                    coordinator.pendingTabDirectionOverride = newIndex >= oldIndex
                     withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
                         coordinator.currentView = tab.view
                     }
