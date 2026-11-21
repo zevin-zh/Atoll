@@ -1,38 +1,37 @@
 import AppKit
 
-/// 菜单栏图标：手绘「刘海岛」剪影（平顶、圆底），template image 自动适配深浅色。
+/// 菜单栏图标：直接用 app 图标本身（缩小后保留配色），与应用图标一致。
 enum MenuBarGlyph {
     static let image: NSImage = {
         let size = NSSize(width: 18, height: 18)
-        let image = NSImage(size: size)
-        image.lockFocus()
 
-        let width: CGFloat = 14
-        let height: CGFloat = 12
-        let x = (size.width - width) / 2
-        let top = size.height - 1.5
-        let bottom = top - height
-        let radius: CGFloat = 4
+        // 优先读 bundle 里的 app 图标，取不到就退回系统 AppIcon 名称。
+        var source: NSImage? = {
+            if let url = Bundle.main.url(forResource: "AppIcon", withExtension: "icns") {
+                return NSImage(contentsOf: url)
+            }
+            return NSImage(named: NSImage.applicationIconName)
+                ?? NSImage(named: "AppIcon")
+        }()
 
-        let path = NSBezierPath()
-        // 平顶（贴着屏幕顶边）
-        path.move(to: NSPoint(x: x, y: top))
-        path.line(to: NSPoint(x: x + width, y: top))
-        // 右侧边下到底部圆角
-        path.line(to: NSPoint(x: x + width, y: bottom + radius))
-        path.appendArc(
-            withCenter: NSPoint(x: x + width - radius, y: bottom + radius),
-            radius: radius, startAngle: 0, endAngle: 180, clockwise: true
+        if source == nil {
+            source = NSRunningApplication.current.icon
+        }
+
+        guard let icon = source else {
+            return NSImage(size: size)
+        }
+
+        let output = NSImage(size: size)
+        output.lockFocus()
+        NSGraphicsContext.current?.imageInterpolation = .high
+        icon.draw(
+            in: NSRect(origin: .zero, size: size),
+            from: NSRect(origin: .zero, size: icon.size),
+            operation: .copy,
+            fraction: 1.0
         )
-        // 左侧边回到顶部
-        path.line(to: NSPoint(x: x, y: top))
-        path.close()
-
-        NSColor.black.setFill()
-        path.fill()
-
-        image.unlockFocus()
-        image.isTemplate = true
-        return image
+        output.unlockFocus()
+        return output
     }()
 }
