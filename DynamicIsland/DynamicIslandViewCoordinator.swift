@@ -103,6 +103,8 @@ class DynamicIslandViewCoordinator: ObservableObject {
     
     /// Direction of the most recent tab switch (true = forward/right, false = backward/left)
     @Published var tabSwitchForward: Bool = true
+    /// 界面标签顺序与内部 tabOrder 不一定一致，点击时由调用方按可见顺序指定方向。
+    var pendingTabDirectionOverride: Bool?
     
     @Published var currentView: NotchViews = .home {
         didSet {
@@ -111,9 +113,14 @@ class DynamicIslandViewCoordinator: ObservableObject {
                 return
             }
             // Track direction before SwiftUI re-renders
-            let oldIdx = Self.tabOrder.firstIndex(of: oldValue) ?? 0
-            let newIdx = Self.tabOrder.firstIndex(of: currentView) ?? 0
-            tabSwitchForward = newIdx >= oldIdx
+            if let override = pendingTabDirectionOverride {
+                tabSwitchForward = override
+                pendingTabDirectionOverride = nil
+            } else {
+                let oldIdx = Self.tabOrder.firstIndex(of: oldValue) ?? 0
+                let newIdx = Self.tabOrder.firstIndex(of: currentView) ?? 0
+                tabSwitchForward = newIdx >= oldIdx
+            }
             handleStatsTabTransition(from: oldValue, to: currentView)
         }
     }

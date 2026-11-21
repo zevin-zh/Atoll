@@ -120,7 +120,12 @@ struct TabSelectionView: View {
                     if tab.view == .extensionExperience {
                         coordinator.selectedExtensionExperienceID = tab.experienceID
                     }
-                    withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                    // 方向必须按"看得见的标签顺序"算：内部 tabOrder 和实际
+                    // 渲染顺序不同（中间有被关掉的模块），用它判断会左右颠倒。
+                    let oldIndex = tabs.firstIndex(where: { $0.view == coordinator.currentView }) ?? 0
+                    let newIndex = tabs.firstIndex(where: { $0.id == tab.id }) ?? 0
+                    coordinator.pendingTabDirectionOverride = newIndex >= oldIndex
+                    withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
                         coordinator.currentView = tab.view
                     }
                 }
