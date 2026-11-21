@@ -202,7 +202,6 @@ struct NotchClipboardView: View {
         }
         // 空状态必须撑住高度：内容为 0 时岛背景会跟着塌成一团甚至消失。
         .frame(maxWidth: .infinity, minHeight: 140, maxHeight: .infinity)
-        .padding(.vertical, 30)
     }
 
     private func copy(_ item: ClipboardItem) {

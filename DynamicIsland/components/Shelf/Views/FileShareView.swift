@@ -99,20 +99,20 @@ struct FileShareView: View {
                         .fill(Color.white.opacity(
                             vm.dropZoneTargeting ? 0.11 : 0.09
                         ))
-                        .frame(width: 55, height: 55)
+                        .frame(width: 40, height: 40)
                     Image(systemName: "square.and.arrow.up")
                     Group {
                         if let imgData = selectedProvider.imageData, let nsImg = NSImage(data: imgData) {
                             Image(nsImage: nsImg)
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 34, height: 34)
+                                .frame(width: 26, height: 26)
                                 .clipped()
                         } else {
                             Image(systemName: "square.and.arrow.up")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 34, height: 34)
+                                .frame(width: 26, height: 26)
                         }
                     }
                         .foregroundStyle(
@@ -125,7 +125,8 @@ struct FileShareView: View {
                 }
 
                 Text(selectedProvider.id)
-                    .font(.system(.headline, design: .rounded))
+                    .font(.system(.caption2, design: .rounded))
+                    .minimumScaleFactor(0.6)
                     .foregroundColor(.white.opacity(0.8))
                     .multilineTextAlignment(.center)
                     .lineLimit(1)
@@ -133,7 +134,7 @@ struct FileShareView: View {
                     .frame(maxWidth: .infinity)
 
             }
-            .padding(18)
+            .padding(8)
             .frame(maxWidth: .infinity)
 
             // Switch button pinned to top-right corner
