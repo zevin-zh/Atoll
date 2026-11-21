@@ -108,11 +108,6 @@ class DynamicIslandViewCoordinator: ObservableObject {
     
     @Published var currentView: NotchViews = .home {
         didSet {
-            // 主页面已删除：简约模式下也落在暂存架，而不是一个不存在的 .home。
-            if Defaults[.enableMinimalisticUI] && currentView != .shelf {
-                currentView = .shelf
-                return
-            }
             // Track direction before SwiftUI re-renders
             if let override = pendingTabDirectionOverride {
                 tabSwitchForward = override

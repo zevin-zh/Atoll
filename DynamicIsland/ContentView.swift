@@ -327,37 +327,40 @@ struct ContentView: View {
         return order
     }
 
-    private var pagerSelection: Binding<NotchViews?> {
-        Binding(
-            get: { coordinator.currentView },
-            set: { newValue in
-                guard let newValue, newValue != coordinator.currentView else { return }
-                coordinator.currentView = newValue
-            }
-        )
+    private var pagerIndex: Int {
+        pagerOrder.firstIndex(of: coordinator.currentView) ?? 0
     }
 
-    /// 每一页占满容器宽度，左右滑动切换 —— 不再用推入式转场，
-    /// 页面尺寸统一，方向天然跟着手走。
+    /// 自己算偏移量的分页容器。
+    /// 不用 ScrollView 的 `scrollPosition`：那一套在页面内容尺寸变化时
+    /// （剪贴板清空导致高度变化）会把位置丢掉，直接弹回第一页。
     private var tabPager: some View {
-        ScrollView(.horizontal) {
+        GeometryReader { geo in
             HStack(spacing: 0) {
                 ForEach(pagerOrder, id: \.self) { view in
                     pagerPage(for: view)
-                        .containerRelativeFrame(.horizontal)
-                        // 页面内容为空时（如剪贴板无记录）撑住最小高度，
-                        // 否则岛背景会跟着内容一起塌掉。
-                        .frame(minHeight: 200, maxHeight: .infinity)
+                        .frame(width: geo.size.width, height: geo.size.height)
                         .id(view)
                 }
             }
-            .scrollTargetLayout()
+            .frame(width: geo.size.width, height: geo.size.height, alignment: .leading)
+            .offset(x: -CGFloat(pagerIndex) * geo.size.width)
+            .animation(.spring(response: 0.36, dampingFraction: 0.86), value: pagerIndex)
+            .gesture(
+                DragGesture(minimumDistance: 12)
+                    .onEnded { value in
+                        let dx = value.translation.width
+                        guard abs(dx) > 40 else { return }
+                        let target = dx < 0 ? pagerIndex + 1 : pagerIndex - 1
+                        guard pagerOrder.indices.contains(target) else { return }
+                        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
+                            coordinator.currentView = pagerOrder[target]
+                        }
+                    }
+            )
         }
-        .scrollTargetBehavior(.paging)
-        .scrollPosition(id: pagerSelection)
-        .frame(minHeight: 200)
-        .scrollIndicators(.hidden)
-        .scrollDisabled(false)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipped()
     }
 
     @ViewBuilder
@@ -379,10 +382,10 @@ struct ContentView: View {
             // 固定高度：内容为空时也不会把岛背景带走
             // （原设计里剪贴板/笔记就是这个高度）。
             NotchNotesView()
-                .frame(height: NotesLayoutState.list.preferredHeight)
+                .frame(height: openNotchSize.height)
         case .clipboard:
             NotchClipboardView()
-                .frame(height: NotesLayoutState.list.preferredHeight)
+                .frame(height: openNotchSize.height)
         case .terminal:
             NotchTerminalView()
         case .extensionExperience:
