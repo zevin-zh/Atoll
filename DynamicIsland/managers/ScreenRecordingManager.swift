@@ -115,39 +115,16 @@ protocol ScreenRecordingStopControlling {
 
 struct NativeScreenRecordingStopController: ScreenRecordingStopControlling {
     func requestStop() async -> Bool {
-        var sentStopRequest = await sendStopRecordingShortcutViaSystemEvents()
-
-        if Task.isCancelled { return sentStopRequest }
-        try? await Task.sleep(for: .milliseconds(120))
-        sentStopRequest = await sendStopRecordingShortcutViaCGEvent() || sentStopRequest
+        // Posted as an HID event rather than scripted through System Events:
+        // driving System Events needed an Automation grant, and the CGEvents
+        // below reach the same shortcut without one.
+        var sentStopRequest = await sendStopRecordingShortcutViaCGEvent()
 
         if Task.isCancelled { return sentStopRequest }
         try? await Task.sleep(for: .milliseconds(300))
-        sentStopRequest = await sendStopRecordingShortcutViaSystemEvents() || sentStopRequest
+        sentStopRequest = await sendStopRecordingShortcutViaCGEvent() || sentStopRequest
 
         return sentStopRequest
-    }
-
-    private func sendStopRecordingShortcutViaSystemEvents() async -> Bool {
-        let script = """
-        tell application "System Events"
-            key down command
-            key down control
-            key code 53
-            delay 0.05
-            key up control
-            key up command
-        end tell
-        """
-
-        do {
-            try await AppleScriptHelper.executeVoid(script)
-            screenRecordingDebugLog("Sent Command-Control-Escape through System Events")
-            return true
-        } catch {
-            screenRecordingDebugLog("System Events stop shortcut failed: \(error)")
-            return false
-        }
     }
 
     private func sendStopRecordingShortcutViaCGEvent() async -> Bool {

@@ -29,7 +29,6 @@ enum MusicControlButton: String, CaseIterable, Identifiable, Codable, Defaults.S
     case trackForward
     case repeatMode
     case mediaOutput
-    case airPlay
     case lyrics
     case likeTrack
     case seekBackward
@@ -64,14 +63,8 @@ enum MusicControlButton: String, CaseIterable, Identifiable, Codable, Defaults.S
         .repeatMode,
         .lyrics,
         .likeTrack,
-        .mediaOutput,
-        .airPlay
+        .mediaOutput
     ]
-
-    /// Controls that are only available when Apple Music is the active media source.
-    var isAppleMusicExclusive: Bool {
-        self == .airPlay
-    }
 
     /// Controls that need the playing source to support favouriting.
     ///
@@ -99,8 +92,6 @@ enum MusicControlButton: String, CaseIterable, Identifiable, Codable, Defaults.S
             return String(localized: "Repeat")
         case .mediaOutput:
             return String(localized: "Change Media Output")
-        case .airPlay:
-            return String(localized: "AirPlay")
         case .lyrics:
             return String(localized: "Lyrics")
         case .likeTrack:
@@ -128,8 +119,6 @@ enum MusicControlButton: String, CaseIterable, Identifiable, Codable, Defaults.S
             return "repeat"
         case .mediaOutput:
             return "speaker.wave.2"
-        case .airPlay:
-            return "airplayaudio"
         case .lyrics:
             return "quote.bubble"
         case .likeTrack:
@@ -149,10 +138,8 @@ enum MusicControlButton: String, CaseIterable, Identifiable, Codable, Defaults.S
 }
 
 extension Array where Element == MusicControlButton {
-    func normalized(allowingMediaOutput: Bool, isAppleMusicActive: Bool = true, canFavorite: Bool = true) -> [MusicControlButton] {
+    func normalized(canFavorite: Bool = true) -> [MusicControlButton] {
         var sanitized = map { button -> MusicControlButton in
-            if button == .mediaOutput && !allowingMediaOutput { return .none }
-            if button.isAppleMusicExclusive && !isAppleMusicActive { return .none }
             if button.requiresFavoriting && !canFavorite { return .none }
             return button
         }
@@ -166,20 +153,5 @@ extension Array where Element == MusicControlButton {
         }
 
         return sanitized
-    }
-}
-
-extension MusicControlButton {
-    init(auxiliaryControl: MusicAuxiliaryControl) {
-        switch auxiliaryControl {
-        case .shuffle:
-            self = .shuffle
-        case .repeatMode:
-            self = .repeatMode
-        case .mediaOutput:
-            self = .mediaOutput
-        case .lyrics:
-            self = .lyrics
-        }
     }
 }

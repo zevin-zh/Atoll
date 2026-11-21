@@ -79,7 +79,7 @@ final class NowPlayingPayloadTests: XCTestCase {
     }
 
     func testSpotifyAdvertisementURIIsRecognized() {
-        var state = PlaybackState(bundleIdentifier: SpotifyController.bundleIdentifier)
+        var state = PlaybackState(bundleIdentifier: SpotifyFavoriting.bundleIdentifier)
         state.contentIdentifier = "spotify:ad:campaign-123"
         state.title = "Sponsored message"
         state.duration = 30
@@ -88,7 +88,7 @@ final class NowPlayingPayloadTests: XCTestCase {
     }
 
     func testRegularShortSpotifyTrackIsNotRecognizedAsAdvertisement() {
-        var state = PlaybackState(bundleIdentifier: SpotifyController.bundleIdentifier)
+        var state = PlaybackState(bundleIdentifier: SpotifyFavoriting.bundleIdentifier)
         state.contentIdentifier = "spotify:track:123"
         state.title = "Short song"
         state.artist = "Artist"

@@ -137,10 +137,6 @@ extension MediaControllerType {
         switch self {
         case .nowPlaying:
             return String(localized: "Works with most media apps, including browsers, to detect what's playing. Note: This may be removed in a future macOS version.")
-        case .spotify:
-            return String(localized: "Connects directly to the Spotify app.")
-        case .appleMusic:
-            return String(localized: "Connects directly to the Apple Music app.")
         case .youtubeMusic:
             return String(localized: "Requires a third-party client with API plugin enabled.")
         case .amazonMusic:

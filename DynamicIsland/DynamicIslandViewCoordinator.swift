@@ -124,7 +124,6 @@ class DynamicIslandViewCoordinator: ObservableObject {
     
     
     @AppStorage("firstLaunch") var firstLaunch: Bool = true
-    @AppStorage("showWhatsNew") var showWhatsNew: Bool = true
     @AppStorage("musicLiveActivityEnabled") var musicLiveActivityEnabled: Bool = true
     @AppStorage("timerLiveActivityEnabled") var timerLiveActivityEnabled: Bool = true
 

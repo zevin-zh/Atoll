@@ -602,8 +602,6 @@ class MusicManager: ObservableObject {
     @Published var secondaryColor: NSColor = .gray
     @Published var bundleIdentifier: String? = nil
 
-    var isAppleMusicActive: Bool { bundleIdentifier == "com.apple.Music" }
-    var isSpotifyActive: Bool { bundleIdentifier == SpotifyController.bundleIdentifier }
     /// Whether favouriting applies to the playing source at all. Decides
     /// whether the control is offered in settings and kept in the layout, so
     /// it must not change with playback or connection state.
@@ -840,10 +838,6 @@ class MusicManager: ObservableObject {
             } else {
                 return nil
             }
-        case .appleMusic:
-            newController = AppleMusicController()
-        case .spotify:
-            newController = SpotifyController()
         case .youtubeMusic:
             newController = YouTubeMusicController()
         case .amazonMusic:
@@ -873,15 +867,12 @@ class MusicManager: ObservableObject {
         let preferredType = Defaults[.mediaController]
         print("Preferred Media Controller: \(preferredType)")
 
-        // If NowPlaying is deprecated but that's the preference, use Apple Music instead
-        let controllerType = (self.isNowPlayingDeprecated && preferredType == .nowPlaying)
-            ? .appleMusic
-            : preferredType
-
-        if let controller = createController(for: controllerType) {
+        if let controller = createController(for: preferredType) {
             setActiveController(controller)
-        } else if controllerType != .appleMusic, let fallbackController = createController(for: .appleMusic) {
-            // Fallback to Apple Music if preferred controller couldn't be created
+        } else if preferredType != .nowPlaying,
+                  let fallbackController = createController(for: .nowPlaying) {
+            // Now Playing needs neither Automation nor a third-party app, so it
+            // is the one source that can always stand in for another.
             setActiveController(fallbackController)
         }
     }
@@ -1021,8 +1012,6 @@ class MusicManager: ObservableObject {
 
             if let liveArtworkURL = state.liveArtworkURL {
                 self.videoArtworkURL = liveArtworkURL
-            } else {
-                self.fetchVideoArtwork()
             }
 
             self.refreshExplicitFlag(for: state)
@@ -1226,7 +1215,7 @@ class MusicManager: ObservableObject {
             return
         }
 
-        if state.bundleIdentifier == SpotifyController.bundleIdentifier,
+        if state.bundleIdentifier == SpotifyFavoriting.bundleIdentifier,
            let spotifyLookupKey = SpotifyExplicitnessResolver.LookupKey(
                contentIdentifier: state.contentIdentifier,
                contentURL: state.contentURL
@@ -1558,7 +1547,7 @@ class MusicManager: ObservableObject {
     /// song owns. Requiring the Spotify source and missing artwork keeps the
     /// fallback narrow enough not to classify ordinary short tracks as ads.
     static func isLikelyAdvertisement(_ state: PlaybackState) -> Bool {
-        guard state.bundleIdentifier.caseInsensitiveCompare(SpotifyController.bundleIdentifier)
+        guard state.bundleIdentifier.caseInsensitiveCompare(SpotifyFavoriting.bundleIdentifier)
             == .orderedSame else { return false }
 
         let identifiers = [state.contentIdentifier, state.contentURL]
@@ -2206,30 +2195,6 @@ class MusicManager: ObservableObject {
 
     // MARK: - Video Artwork
 
-    func fetchVideoArtwork() {
-        guard Defaults[.lockScreenMusicFullscreenVideoArtwork] else {
-            videoArtworkURL = nil
-            return
-        }
-        // Se il player non è Apple Music, non toccare videoArtworkURL:
-        // SpotifyController gestisce il canvas in modo autonomo tramite liveArtworkURL.
-        guard bundleIdentifier == "com.apple.Music" else {
-            return
-        }
-
-        let title = songTitle
-        let artist = artistName
-
-        Task {
-            let url = await AnimatedArtworkManager.shared.fetchAnimatedArtworkURL(
-                title: title, artist: artist
-            )
-            await MainActor.run {
-                self.videoArtworkURL = url
-            }
-        }
-    }
-
     func toggleLyrics() {
         // Toggle the UI state first so the views can react immediately.
         showLyrics.toggle()
@@ -2263,10 +2228,6 @@ extension MusicManager {
 
     private static func brandAccentColor(for controller: MediaControllerType, bundleIdentifier: String?) -> Color {
         switch controller {
-        case .appleMusic:
-            return appleMusicPink
-        case .spotify:
-            return spotifyGreen
         case .amazonMusic:
             return amazonOrange
         case .tidal, .cider:

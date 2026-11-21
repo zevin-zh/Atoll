@@ -79,7 +79,7 @@ func applySelectedAppIcon() {
         return
     }
 
-    let fallbackName = Bundle.main.iconFileName ?? "AppIcon"
+    let fallbackName = Bundle.main.infoDictionary?["CFBundleIconFile"] as? String ?? "AppIcon"
     if let image = NSImage(named: fallbackName) {
         NSApp.applicationIconImage = image
     }

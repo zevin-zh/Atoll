@@ -17,6 +17,7 @@
  */
 
 import AVFoundation
+import ApplicationServices
 import Combine
 import Defaults
 import KeyboardShortcuts
@@ -24,6 +25,7 @@ import ServiceManagement
 import Sparkle
 import SwiftUI
 import SkyLightWindow
+import UserNotifications
 
 @main
 struct DynamicNotchApp: App {
@@ -48,6 +50,10 @@ struct DynamicNotchApp: App {
     var body: some Scene {
         MenuBarExtra("Z-island", systemImage: "mountain.2.fill", isInserted: $showMenuBarIcon) {
             LaunchAtLoginToggle()
+            GrantAllPermissionsButton()
+            Divider()
+            ShowMenuBarIconToggle()
+            Divider()
             Button("Restart Z-island") {
                 guard let bundleIdentifier = Bundle.main.bundleIdentifier else { return }
 
@@ -106,6 +112,37 @@ struct LaunchAtLoginToggle: View {
     }
 }
 
+/// One press for every runtime permission the app can ask for itself.
+///
+/// Accessibility, Screen Recording and Notifications are each requested only
+/// when the matching preflight check says they are missing; anything the app
+/// cannot grant on its own sends the user to the right System Settings pane.
+struct GrantAllPermissionsButton: View {
+    var body: some View {
+        Button {
+            PermissionsRequester.grantAll()
+        } label: {
+            Label("Grant All Permissions", systemImage: "checkmark.shield")
+        }
+    }
+}
+
+/// Hides or restores the menu-bar item the whole app hangs off.
+///
+/// The app runs as an agent (`LSUIElement`), so this item is its only entry
+/// point. Turning it off is reversible from the command line —
+/// `defaults write <bundle id> menubarIcon -bool true` — which is worth
+/// knowing before switching it off.
+struct ShowMenuBarIconToggle: View {
+    @Default(.menubarIcon) private var showMenuBarIcon
+
+    var body: some View {
+        Toggle(isOn: $showMenuBarIcon) {
+            Label("Show Menu Bar Icon", systemImage: "menubar.rectangle")
+        }
+    }
+}
+
 final class FirstMouseHostingView<Content: View>: NSHostingView<Content> {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
         true
@@ -125,7 +162,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var window: NSWindow?
     let vm: DynamicIslandViewModel = .init()
     @ObservedObject var coordinator = DynamicIslandViewCoordinator.shared
-    var whatsNewWindow: NSWindow?
     var timer: Timer?
     let calendarManager = CalendarManager.shared
     let webcamManager = WebcamManager.shared
@@ -641,7 +677,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // Migrate legacy progress bar settings
         Defaults.Keys.migrateProgressBarStyle()
-        Defaults.Keys.migrateMusicAuxControls()
         Defaults.Keys.migrateMusicControlSlots()
         Defaults.Keys.migrateCapsLockTintMode()
         Defaults.Keys.migrateClipboardShortcutToV()

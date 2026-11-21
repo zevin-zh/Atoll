@@ -148,8 +148,7 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
     @MainActor
     var canEverFavorite: Bool {
         switch playbackState.bundleIdentifier {
-        case AppleMusicFavoriting.bundleIdentifier,
-             SpotifyController.bundleIdentifier,
+        case SpotifyFavoriting.bundleIdentifier,
              YouTubeMusicFavoriting.bundleIdentifier,
              TidalAccessibility.bundleIdentifier:
             return true
@@ -161,9 +160,7 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
     @MainActor
     var supportsFavoriting: Bool {
         switch playbackState.bundleIdentifier {
-        case AppleMusicFavoriting.bundleIdentifier:
-            return AppleMusicFavoriting.isAvailable
-        case SpotifyController.bundleIdentifier:
+        case SpotifyFavoriting.bundleIdentifier:
             return SpotifyFavoriting.isAvailable
         case YouTubeMusicFavoriting.bundleIdentifier:
             return YouTubeMusicFavoriting.default.isAvailable
@@ -182,9 +179,7 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
 
     func isCurrentTrackFavorited() async -> Bool? {
         switch playbackState.bundleIdentifier {
-        case AppleMusicFavoriting.bundleIdentifier:
-            return await AppleMusicFavoriting.isCurrentTrackFavorited()
-        case SpotifyController.bundleIdentifier:
+        case SpotifyFavoriting.bundleIdentifier:
             return await SpotifyFavoriting.isFavorited(
                 contentIdentifier: playbackState.contentIdentifier,
                 contentURL: playbackState.contentURL
@@ -201,9 +196,7 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
     @discardableResult
     func setCurrentTrackFavorited(_ favorited: Bool) async -> Bool {
         switch playbackState.bundleIdentifier {
-        case AppleMusicFavoriting.bundleIdentifier:
-            return await AppleMusicFavoriting.setCurrentTrackFavorited(favorited)
-        case SpotifyController.bundleIdentifier:
+        case SpotifyFavoriting.bundleIdentifier:
             return await SpotifyFavoriting.setFavorited(
                 favorited,
                 contentIdentifier: playbackState.contentIdentifier,

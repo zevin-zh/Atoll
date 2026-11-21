@@ -673,7 +673,7 @@ final class FullScreenArtworkWindowManager: ObservableObject {
     }
 
     private func shouldUseSpotifyStaticFallbackWallpaper(videoURL: URL?) -> Bool {
-        guard MusicManager.shared.bundleIdentifier == SpotifyController.bundleIdentifier else {
+        guard MusicManager.shared.bundleIdentifier == SpotifyFavoriting.bundleIdentifier else {
             return false
         }
 
@@ -681,7 +681,7 @@ final class FullScreenArtworkWindowManager: ObservableObject {
     }
 
     private func shouldUseSpotifyFallbackLayout(videoURL: URL?) -> Bool {
-        guard MusicManager.shared.bundleIdentifier == SpotifyController.bundleIdentifier else {
+        guard MusicManager.shared.bundleIdentifier == SpotifyFavoriting.bundleIdentifier else {
             return false
         }
 

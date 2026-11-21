@@ -373,8 +373,6 @@ enum LyricHighlightStyle: String, CaseIterable, Identifiable, Defaults.Serializa
 
 enum MediaControllerType: String, CaseIterable, Identifiable, Defaults.Serializable {
     case nowPlaying = "Now Playing"
-    case appleMusic = "Apple Music"
-    case spotify = "Spotify"
     case youtubeMusic = "Youtube Music"
     case amazonMusic = "Amazon Music"
     case tidal = "TIDAL"
@@ -385,8 +383,6 @@ enum MediaControllerType: String, CaseIterable, Identifiable, Defaults.Serializa
     var localizedName: String {
         switch self {
         case .nowPlaying: return String(localized: "Now Playing")
-        case .appleMusic: return String(localized: "Apple Music")
-        case .spotify: return String(localized: "Spotify")
         case .youtubeMusic: return String(localized: "Youtube Music")
         case .amazonMusic: return String(localized: "Amazon Music")
         case .tidal: return String(localized: "TIDAL")
@@ -513,52 +509,6 @@ enum RecordingControlMode: String, CaseIterable, Identifiable, Defaults.Serializ
         case .withStopButton:
             return String(localized: "With stop button")
         }
-    }
-}
-
-enum MusicAuxiliaryControl: String, CaseIterable, Identifiable, Defaults.Serializable {
-    case shuffle
-    case repeatMode
-    case mediaOutput
-    case lyrics
-
-    var id: String { rawValue }
-
-    var displayName: String {
-        switch self {
-        case .shuffle:
-            return String(localized: "Shuffle")
-        case .repeatMode:
-            return String(localized: "Repeat")
-        case .mediaOutput:
-            return String(localized: "Media Output")
-        case .lyrics:
-            return String(localized: "Lyrics")
-        }
-    }
-
-    var symbolName: String {
-        switch self {
-        case .shuffle:
-            return "shuffle"
-        case .repeatMode:
-            return "repeat"
-        case .mediaOutput:
-            return "laptopcomputer"
-        case .lyrics:
-            return "quote.bubble"
-        }
-    }
-
-    static func alternative(
-        excluding control: MusicAuxiliaryControl,
-        preferring candidate: MusicAuxiliaryControl? = nil
-    ) -> MusicAuxiliaryControl {
-        if let candidate, candidate != control {
-            return candidate
-        }
-
-        return allCases.first { $0 != control } ?? .shuffle
     }
 }
 
@@ -785,9 +735,6 @@ extension Defaults.Keys {
     /// most people and a permanent slider is a preference, not an improvement.
     static let alwaysShowLockScreenVolume = Key<Bool>("alwaysShowLockScreenVolume", default: false)
     static let musicControlSlots = Key<[MusicControlButton]>("musicControlSlots", default: MusicControlButton.defaultLayout)
-    static let musicAuxLeftControl = Key<MusicAuxiliaryControl>("musicAuxLeftControl", default: .shuffle)
-    static let musicAuxRightControl = Key<MusicAuxiliaryControl>("musicAuxRightControl", default: .repeatMode)
-    static let didMigrateMusicAuxControls = Key<Bool>("didMigrateMusicAuxControls", default: false)
     static let musicSkipBehavior = Key<MusicSkipBehavior>("musicSkipBehavior", default: .track)
     static let musicControlWindowEnabled = Key<Bool>("musicControlWindowEnabled", default: false)
     static let didMigrateMusicControlSlots = Key<Bool>("didMigrateMusicControlSlots", default: false)
@@ -847,7 +794,6 @@ extension Defaults.Keys {
         default: true
     )
     static let lockScreenPanelUsesBlur = Key<Bool>("lockScreenPanelUsesBlur", default: true)
-    static let lockScreenMusicMergedAirPlayOutput = Key<Bool>("lockScreenMusicMergedAirPlayOutput", default: true)
     static let lockScreenMusicFullscreenArtworkEnabled = Key<Bool>("lockScreenMusicFullscreenArtworkEnabled", default: true)
     static let lockScreenKeepAlbumArtVisibleDuringFullscreenArtwork = Key<Bool>("lockScreenKeepAlbumArtVisibleDuringFullscreenArtwork", default: false)
     static let lockScreenMusicFullscreenVideoArtwork = Key<Bool>("lockScreenMusicFullscreenVideoArtwork", default: true)
@@ -1061,7 +1007,6 @@ extension Defaults.Keys {
     static let recordingHoverStyle = Key<RecordingHoverStyle>("recordingHoverStyle", default: .default)
     static let recordingControlMode = Key<RecordingControlMode>("recordingControlMode", default: .withStopButton)
     // Polling removed - now uses event-driven private API detection (CGSIsScreenWatcherPresent)
-    // static let enableScreenRecordingPolling = Key<Bool>("enableScreenRecordingPolling", default: false)
 
     // MARK: Focus / Do Not Disturb Detection
     static let enableDoNotDisturbDetection = Key<Bool>("enableDoNotDisturbDetection", default: true)
@@ -1103,14 +1048,12 @@ extension Defaults.Keys {
     static let lyricsPanelOffset = Key<CGFloat>("lyricsPanelOffset", default: 0)
     static let showLiveCanvasInDynamicIsland = Key<Bool>("showLiveCanvasInDynamicIsland", default: false)
     
-    // Helper to determine the default media controller based on macOS version
-    static var defaultMediaController: MediaControllerType {
-        if #available(macOS 15.4, *) {
-            return .appleMusic
-        } else {
-            return .nowPlaying
-        }
-    }
+    /// Now Playing reads the system's own now-playing information through
+    /// MediaRemote, which needs no Automation grant and no scriptable app.
+    /// Every source that had to drive a player over Apple Events has been
+    /// removed, so this is the only default that can start up without a
+    /// permission prompt.
+    static var defaultMediaController: MediaControllerType { .nowPlaying }
     
     // Migration helper to convert from legacy enableGradient Boolean to new ProgressBarStyle enum
     static func migrateProgressBarStyle() {
@@ -1121,18 +1064,6 @@ extension Defaults.Keys {
         if wasGradientEnabled && Defaults[.progressBarStyle] == .hierarchical {
             Defaults[.progressBarStyle] = .gradient
         }
-    }
-
-    static func migrateMusicAuxControls() {
-        if Defaults[.didMigrateMusicAuxControls] == false {
-            if Defaults[.showMediaOutputControl] {
-                Defaults[.musicAuxRightControl] = .mediaOutput
-            }
-
-            Defaults[.didMigrateMusicAuxControls] = true
-        }
-
-        normalizeMusicAuxControls()
     }
 
     /// Move the clipboard shortcut off the old Cmd+Shift+C default.
@@ -1171,30 +1102,12 @@ extension Defaults.Keys {
     static func migrateMusicControlSlots() {
         guard Defaults[.didMigrateMusicControlSlots] == false else { return }
 
-        let allowMediaOutput = Defaults[.showMediaOutputControl]
-        let baseLayout: [MusicControlButton]
+        let baseLayout: [MusicControlButton] = Defaults[.showShuffleAndRepeat]
+            ? MusicControlButton.defaultLayout
+            : MusicControlButton.minimalLayout
 
-        if Defaults[.showShuffleAndRepeat] {
-            var slots = MusicControlButton.defaultLayout
-            let left = MusicControlButton(auxiliaryControl: Defaults[.musicAuxLeftControl])
-            let right = MusicControlButton(auxiliaryControl: Defaults[.musicAuxRightControl])
-            slots[0] = left
-            slots[4] = right
-            baseLayout = slots
-        } else {
-            baseLayout = MusicControlButton.minimalLayout
-        }
-
-        Defaults[.musicControlSlots] = baseLayout.normalized(allowingMediaOutput: allowMediaOutput)
+        Defaults[.musicControlSlots] = baseLayout.normalized()
         Defaults[.didMigrateMusicControlSlots] = true
-    }
-
-    private static func normalizeMusicAuxControls() {
-        guard Defaults[.musicAuxLeftControl] == Defaults[.musicAuxRightControl] else { return }
-
-        let current = Defaults[.musicAuxLeftControl]
-        let fallback = MusicAuxiliaryControl.alternative(excluding: current)
-        Defaults[.musicAuxRightControl] = fallback
     }
     static let showSongMetadataInClosedNotch = Key<Bool>("showSongMetadataInClosedNotch", default: false)
 }
