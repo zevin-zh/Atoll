@@ -57,14 +57,22 @@ struct ShelfView: View {
     @StateObject private var quickLookService = QuickLookService()
     @State private var autoCloseToken = UUID()
     @State private var viewportSize: CGSize = .zero
+    // 「查看全部」模式：隐藏隔空投送块，文件网格占满整个暂存架。
+    @State private var showAllFiles = false
     private let spacing: CGFloat = 8
 
     var body: some View {
         HStack(spacing: 12) {
-            FileShareView()
-                .aspectRatio(1, contentMode: .fit)
-                .environmentObject(vm)
+            if !showAllFiles {
+                FileShareView()
+                    // 隔空投送块固定为小方块，不再跟随岛高占一半宽度，
+                    // 把空间让给文件网格。
+                    .frame(height: 120)
+                    .aspectRatio(1, contentMode: .fit)
+                    .environmentObject(vm)
+            }
             panel
+                .overlay(alignment: .topTrailing) { viewAllFilesButton }
                 .onDrop(of: [.fileURL, .url, .utf8PlainText, .plainText, .data], isTargeted: $vm.dragDetectorTargeting) { providers in
                     handleDrop(providers: providers)
                 }
@@ -82,6 +90,23 @@ struct ShelfView: View {
             vm.setAutoCloseSuppression(false, token: autoCloseToken)
         }
         .quickLookPresenter(using: quickLookService)
+    }
+
+    private var viewAllFilesButton: some View {
+        Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+                showAllFiles.toggle()
+            }
+        } label: {
+            Image(systemName: showAllFiles ? "rectangle.compress.vertical" : "square.grid.2x2")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.65))
+                .padding(6)
+                .background(Circle().fill(Color.white.opacity(0.08)))
+        }
+        .buttonStyle(.plain)
+        .help(showAllFiles ? "收起" : "查看全部")
+        .padding(8)
     }
 
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
