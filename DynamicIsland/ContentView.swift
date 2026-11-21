@@ -188,20 +188,6 @@ struct ContentView: View {
         if coordinator.currentView == .timer {
             return CGSize(width: baseSize.width, height: 250) // Extra height for timer presets
         }
-        
-        if coordinator.currentView == .notes {
-            let preferredHeight = coordinator.notesLayoutState.preferredHeight
-            let resolvedHeight = max(baseSize.height, preferredHeight)
-            return CGSize(width: baseSize.width, height: resolvedHeight)
-        }
-
-        if coordinator.currentView == .clipboard {
-            // Clipboard has its own fixed height source; don't inherit whatever notes
-            // layout state happens to be set.
-            let resolvedHeight = max(baseSize.height, NotesLayoutState.list.preferredHeight)
-            return CGSize(width: baseSize.width, height: resolvedHeight)
-        }
-
         if coordinator.currentView == .terminal {
             // Dynamic height: up to terminalMaxHeightFraction of screen, min 300pt
             let screenHeight = NSScreen.main?.visibleFrame.height ?? 800
@@ -371,10 +357,10 @@ struct ContentView: View {
         case .home:
             NotchHomeView(albumArtNamespace: albumArtNamespace)
         case .shelf:
-            // 与剪贴板页一致：显式钉到 openNotchSize.height，
-            // 否则面板比背景高出阴影边距，底部虚线框会被裁掉。
+            // 与剪贴板页一致：钉到 dynamicNotchSize.height（窗口/背景同源），
+            // 保证两页展开高度完全一致；钉高防止内容为空时面板塌陷。
             NotchShelfView()
-                .frame(height: openNotchSize.height)
+                .frame(height: dynamicNotchSize.height)
         case .timer:
             NotchTimerView()
         case .stats:
@@ -384,10 +370,9 @@ struct ContentView: View {
         case .colorPicker:
             NotchColorPickerView()
         case .notes:
-            // 固定高度：内容为空时也不会把岛背景带走
-            // （原设计里剪贴板/笔记就是这个高度）。
+            // 固定高度：内容为空时也不会把岛背景带走。
             NotchNotesView()
-                .frame(height: openNotchSize.height)
+                .frame(height: dynamicNotchSize.height)
         case .clipboard:
             NotchClipboardView()
                 // 与暂存架页一致：用 dynamicNotchSize（窗口同源），保证两页大小一致。
@@ -399,7 +384,7 @@ struct ContentView: View {
                 ExtensionNotchExperienceTabView(payload: payload)
             } else {
                 NotchShelfView()
-                    .frame(height: openNotchSize.height)
+                    .frame(height: dynamicNotchSize.height)
             }
         }
     }
