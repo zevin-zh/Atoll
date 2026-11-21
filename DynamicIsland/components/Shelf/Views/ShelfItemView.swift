@@ -65,7 +65,7 @@ struct ShelfItemView: View {
                     iconView
                     textView
                 }
-                .frame(width: 105)
+                .frame(width: 70)
                 .padding(.vertical, 10)
                 .padding(.horizontal, 5)
                 .background(backgroundView)
@@ -113,7 +113,7 @@ struct ShelfItemView: View {
                 )
             } else {
                 Color.clear
-                    .frame(width: 105)
+                    .frame(width: 70)
                     .padding(.vertical, 10)
                     .padding(.horizontal, 5)
             }
@@ -153,8 +153,8 @@ struct ShelfItemView: View {
         Image(nsImage: viewModel.thumbnail ?? viewModel.icon ?? NSImage())
             .resizable()
             .aspectRatio(contentMode: .fit)
-            .frame(width: 56, height: 56)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .frame(width: 26, height: 26)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
             .shadow(color: .black.opacity(0.15), radius: 3, x: 0, y: 2)
     }
 
