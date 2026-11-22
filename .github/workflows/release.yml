@@ -163,14 +163,21 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ steps.version.outputs.tag }}"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "$TAG" -m "Release ${{ steps.version.outputs.version }}" 2>/dev/null || true
-          git push origin "$TAG"
-          gh release create "$TAG" \
-            --title "${APP_NAME} ${{ steps.version.outputs.version }}" \
-            --notes-file build/release_notes.md \
-            "build/${{ steps.version.outputs.dmg_name }}"
+          DMG="build/${{ steps.version.outputs.dmg_name }}"
+
+          # tag 是这次运行的触发者，不需要再建/再推
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "release $TAG 已存在，替换资产与说明"
+            gh release upload "$TAG" "$DMG" --clobber
+            gh release edit "$TAG" \
+              --title "${APP_NAME} ${{ steps.version.outputs.version }}" \
+              --notes-file build/release_notes.md
+          else
+            gh release create "$TAG" \
+              --title "${APP_NAME} ${{ steps.version.outputs.version }}" \
+              --notes-file build/release_notes.md \
+              "$DMG"
+          fi
 
       # ── 把更新后的 appcast 推回仓库，app 下次就能读到 ──
       - name: Commit Appcast
