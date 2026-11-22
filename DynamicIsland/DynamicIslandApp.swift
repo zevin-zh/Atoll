@@ -584,6 +584,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // stored history back.
         ClipboardManager.purgeStoredHistoryIfPersistenceDisabled()
 
+        // 剪贴板采集不再依赖头部那个图标（已移除），开着就随 app 启动。
+        if Defaults[.enableClipboardManager], !ClipboardManager.shared.isMonitoring {
+            ClipboardManager.shared.startMonitoring()
+        }
+
         
         
         // Observe tab changes - use immediate resize to keep the notch pinned

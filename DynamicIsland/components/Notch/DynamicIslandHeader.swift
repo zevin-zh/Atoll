@@ -23,9 +23,7 @@ struct DynamicIslandHeader: View {
     @EnvironmentObject var vm: DynamicIslandViewModel
     @EnvironmentObject var webcamManager: WebcamManager
     @ObservedObject var coordinator = DynamicIslandViewCoordinator.shared
-    @ObservedObject var clipboardManager = ClipboardManager.shared
     @ObservedObject var shelfState = ShelfStateViewModel.shared
-    @Default(.showClipboardIcon) var showClipboardIcon
     @Default(.enableMinimalisticUI) var enableMinimalisticUI
     
     /// Point size per symbol, so the row reads as one size.
@@ -108,29 +106,7 @@ struct DynamicIslandHeader: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
-                    
-                    if Defaults[.enableClipboardManager] && showClipboardIcon {
-                        Button(action: {
-                            // Cancel the auto-close armed by toggleNotchOpen so it can't
-                            // close the notch shortly after we switch into the clipboard tab.
-                            AppDelegate.shared?.cancelPendingNotchAutoClose()
-                            // Toggle: a second tap on the clipboard button leaves the tab.
-                            coordinator.currentView = (coordinator.currentView == .clipboard) ? .shelf : .clipboard
-                        }) {
-                            Capsule()
-                                .fill(.black)
-                                .frame(width: 30, height: 30)
-                                .overlay {
-                                    headerGlyph("list.clipboard")
-                                }
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .onAppear {
-                            if Defaults[.enableClipboardManager] && !clipboardManager.isMonitoring {
-                                clipboardManager.startMonitoring()
-                            }
-                        }
-                    }
+                    // 剪贴板已经是页签，头部不再放重复的图标。
                 }
 
             }
@@ -153,12 +129,6 @@ struct DynamicIslandHeader: View {
     }
 }
 
-private extension DynamicIslandHeader {
-    var shouldSuppressStatusIndicators: Bool {
-        Defaults[.enableClipboardManager]
-            && Defaults[.showClipboardIcon]
-    }
-}
 
 #Preview {
     DynamicIslandHeader()
