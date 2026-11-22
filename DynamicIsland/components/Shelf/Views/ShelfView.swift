@@ -30,6 +30,11 @@ struct ShelfView: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            AirDropBar()
+                // 隔空投送块：窄条（60pt 宽），高度随文件区边框拉满。
+                .frame(width: 60)
+                .frame(maxHeight: .infinity)
+                .environmentObject(vm)
             panel
                 .onDrop(of: [.fileURL, .url, .utf8PlainText, .plainText, .data], isTargeted: $vm.dragDetectorTargeting) { providers in
                     handleDrop(providers: providers)
