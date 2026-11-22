@@ -57,6 +57,7 @@ struct DynamicNotchApp: App {
             Divider()
             ShowMenuBarIconToggle()
             Divider()
+            CheckForUpdatesButton(updater: updaterController.updater)
             Button("重启 Z-island") {
                 guard let bundleIdentifier = Bundle.main.bundleIdentifier else { return }
 

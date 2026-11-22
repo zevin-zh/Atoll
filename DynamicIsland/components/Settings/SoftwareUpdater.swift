@@ -48,3 +48,26 @@ struct CheckForUpdatesView: View {
             .disabled(!checkForUpdatesViewModel.canCheckForUpdates)
     }
 }
+
+/// 菜单栏里的「检查更新」。
+///
+/// `canCheckForUpdates` 通过 KVO 订阅刷新：检查进行中菜单项会自动置灰，
+/// 避免连点触发多次检查。
+struct CheckForUpdatesButton: View {
+    @ObservedObject private var viewModel: CheckForUpdatesViewModel
+    private let updater: SPUUpdater
+
+    init(updater: SPUUpdater) {
+        self.updater = updater
+        self.viewModel = CheckForUpdatesViewModel(updater: updater)
+    }
+
+    var body: some View {
+        Button {
+            updater.checkForUpdates()
+        } label: {
+            Label("检查更新…", systemImage: "arrow.triangle.2.circlepath")
+        }
+        .disabled(!viewModel.canCheckForUpdates)
+    }
+}

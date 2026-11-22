@@ -65,6 +65,8 @@
 	<string>Z-island needs Reminders access to show your reminders</string>
 	<key>NSScreenCaptureUsageDescription</key>
 	<string>Z-island needs screen recording permission to capture screenshots for the AI assistant feature.</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
 	<key>SUEnableDownloaderService</key>
 	<true/>
 	<key>SUEnableInstallerLauncherService</key>
@@ -72,7 +74,9 @@
 	<key>SUFeedURL</key>
 	<string>https://raw.githubusercontent.com/zevin-zh/Z-island/main/Updates/appcast.xml</string>
 	<key>SUPublicEDKey</key>
-	<string>q2YQaJ1umGkaIJWMGN9Isj5fx/YlUtxnzHEBqFtfZcg=</string>
+	<string>qhjRrawao9kFMoXu/hnkj8RU03o+kXdm4rnQpzpeg6U=</string>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
 	<key>UTImportedTypeDeclarations</key>
 	<array>
 		<dict/>

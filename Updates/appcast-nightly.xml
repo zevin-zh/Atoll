@@ -2,7 +2,7 @@
 <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
     <channel>
         <title>Z-island</title>
-        <description>Z-island 是个人使用的精简 fork，不提供自动更新。</description>
+        <description>Z-island 更新源</description>
         <language>zh-cn</language>
     </channel>
 </rss>
