@@ -50,10 +50,11 @@ struct DynamicNotchApp: App {
     var body: some Scene {
         MenuBarExtra(isInserted: $showMenuBarIcon) {
 
+            LayoutPicker()
+            Divider()
             LaunchAtLoginToggle()
             GrantAllPermissionsButton()
             Divider()
-            LayoutPicker()
             ShowMenuBarIconToggle()
             Divider()
             Button("重启 Z-island") {
@@ -88,10 +89,18 @@ struct DynamicNotchApp: App {
 /// at launch — it only reflects the current SMAppService state.
 struct LaunchAtLoginToggle: View {
     @State private var isLoginItemEnabled = SMAppService.mainApp.status == .enabled
+    @State private var needsApproval = SMAppService.mainApp.status == .requiresApproval
+
+    /// 以系统真实状态为准，注册/注销后立即反映到菜单的对号上。
+    private func sync() {
+        let status = SMAppService.mainApp.status
+        isLoginItemEnabled = status == .enabled
+        needsApproval = status == .requiresApproval
+    }
 
     var body: some View {
         Toggle(isOn: Binding(
-            get: { SMAppService.mainApp.status == .enabled },
+            get: { isLoginItemEnabled },
             set: { newValue in
                 do {
                     if newValue {
@@ -104,15 +113,16 @@ struct LaunchAtLoginToggle: View {
                     // back to whatever state the system actually reports.
                     NSLog("LaunchAtLogin toggle failed: \(error)")
                 }
-                isLoginItemEnabled = SMAppService.mainApp.status == .enabled
+                sync()
             }
         )) {
-            Label("开机自启", systemImage: "poweron")
+            // 待用户到系统设置里允许时，别让对号再骗人，直接说清楚。
+            Label(needsApproval ? "开机自启（待系统允许）" : "开机自启", systemImage: "poweron")
         }
         .onAppear {
             // Re-sync with the system every time the menu opens, in case the
             // user toggled the login item from System Settings.
-            isLoginItemEnabled = SMAppService.mainApp.status == .enabled
+            sync()
         }
     }
 }
