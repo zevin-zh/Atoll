@@ -19,13 +19,10 @@
 		7E61181A2E24071E0050006C /* SwiftUIIntrospect in Frameworks */ = {isa = PBXBuildFile; productRef = B1628B912CC260C0003D8DF3 /* SwiftUIIntrospect */; };
 		7E61181B2E24071E0050006C /* LottieUI in Frameworks */ = {isa = PBXBuildFile; productRef = B194240A2CD10017003E5DC2 /* LottieUI */; };
 		7E61181C2E24071E0050006C /* MacroVisionKit in Frameworks */ = {isa = PBXBuildFile; productRef = 146BC4362D366E9B0047C66A /* MacroVisionKit */; };
-		7E6856482EA963FD00D261F5 /* Lock.json in Resources */ = {isa = PBXBuildFile; fileRef = 7E6856472EA963FD00D261F5 /* Lock.json */; };
-		7E8130402E3FB40500E08F3F /* mediaremote-adapter.pl in Resources */ = {isa = PBXBuildFile; fileRef = 7E81303D2E3FB40500E08F3F /* mediaremote-adapter.pl */; };
 		7E8840D72E9A346700C5CB8C /* Dog waiting.json in Resources */ = {isa = PBXBuildFile; fileRef = 7E8840D62E9A346700C5CB8C /* Dog waiting.json */; };
 		7E8840D92E9A347000C5CB8C /* Moody Dog.json in Resources */ = {isa = PBXBuildFile; fileRef = 7E8840D82E9A347000C5CB8C /* Moody Dog.json */; };
 		7E8840DB2E9A347800C5CB8C /* Orange Cat Peeping.json in Resources */ = {isa = PBXBuildFile; fileRef = 7E8840DA2E9A347800C5CB8C /* Orange Cat Peeping.json */; };
 		7E9911B02EFD7D1B002EDFD5 /* Reindeer.json in Resources */ = {isa = PBXBuildFile; fileRef = 7E9911AF2EFD7D1B002EDFD5 /* Reindeer.json */; };
-		7E9918722EFDAE5B002EDFD5 /* MediaRemoteAdapter.framework in Resources */ = {isa = PBXBuildFile; fileRef = F4C1DD09EC134302938E84F6 /* MediaRemoteAdapter.framework */; };
 		7EE1D73D2E6B1E0B00997219 /* ApplicationServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7EE1D73C2E6B1E0B00997219 /* ApplicationServices.framework */; };
 		7EE1D73F2E6B1E1200997219 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7EE1D73E2E6B1E1200997219 /* IOKit.framework */; };
 		7EF10C122F817ECF004229A0 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7EF10C112F817ECF004229A0 /* Accelerate.framework */; };
@@ -38,7 +35,6 @@
 		A1C0FFEE0004000000000001 /* UnsyncedLyricsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1C0FFEE0004000000000002 /* UnsyncedLyricsTests.swift */; };
 		A3C83CAF84544DCE386C3BB8 /* DynamicIslandUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54078F29304A9DBBEFBDF932 /* DynamicIslandUITests.swift */; };
 		A4B5C6D7E8F90123456789AB /* AppleMusicControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B5C6D7E8F90123456789AC /* AppleMusicControllerTests.swift */; };
-		A70F1A012F90000100F1A001 /* FingerprintScan.json in Resources */ = {isa = PBXBuildFile; fileRef = A70F1A022F90000100F1A001 /* FingerprintScan.json */; };
 		B1C2D3E4F5061728394A5B6C /* PartialDownloadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728394A5B6D /* PartialDownloadTests.swift */; };
 		B1C2D3E4F5A60718293A4B01 /* MediaKeyTapRetryPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A60718293A4B02 /* MediaKeyTapRetryPolicyTests.swift */; };
 		B4777BB9FE29243B253B8306 /* SpotifyLibraryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFA269966BB987D4A1B411A2 /* SpotifyLibraryTests.swift */; };
@@ -85,8 +81,6 @@
 		7E25ECA02E6C6C3800700E72 /* CoreBrightness.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreBrightness.framework; path = /System/Library/PrivateFrameworks/CoreBrightness.framework; sourceTree = "<absolute>"; };
 		7E25ECA22E6C6E2600700E72 /* OSD.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OSD.framework; path = /System/Library/PrivateFrameworks/OSD.framework; sourceTree = "<absolute>"; };
 		7E25ECA42E6C6E7800700E72 /* DisplayServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DisplayServices.framework; path = /System/Library/PrivateFrameworks/DisplayServices.framework; sourceTree = "<absolute>"; };
-		7E6856472EA963FD00D261F5 /* Lock.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = Lock.json; sourceTree = "<group>"; };
-		7E81303D2E3FB40500E08F3F /* mediaremote-adapter.pl */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = "mediaremote-adapter.pl"; sourceTree = "<group>"; };
 		7E8840D62E9A346700C5CB8C /* Dog waiting.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "Dog waiting.json"; sourceTree = "<group>"; };
 		7E8840D82E9A347000C5CB8C /* Moody Dog.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "Moody Dog.json"; sourceTree = "<group>"; };
 		7E8840DA2E9A347800C5CB8C /* Orange Cat Peeping.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "Orange Cat Peeping.json"; sourceTree = "<group>"; };
@@ -104,7 +98,6 @@
 		A1C0FFEE0002000000000002 /* PerAppVolumeTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PerAppVolumeTests.swift; sourceTree = "<group>"; };
 		A1C0FFEE0004000000000002 /* UnsyncedLyricsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UnsyncedLyricsTests.swift; sourceTree = "<group>"; };
 		A4B5C6D7E8F90123456789AC /* AppleMusicControllerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleMusicControllerTests.swift; sourceTree = "<group>"; };
-		A70F1A022F90000100F1A001 /* FingerprintScan.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = FingerprintScan.json; sourceTree = "<group>"; };
 		B1C2D3E4F5061728394A5B6D /* PartialDownloadTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PartialDownloadTests.swift; sourceTree = "<group>"; };
 		B1C2D3E4F5A60718293A4B02 /* MediaKeyTapRetryPolicyTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MediaKeyTapRetryPolicyTests.swift; sourceTree = "<group>"; };
 		C0DEFACE1234567890ABCDEF /* FlyoutFrameCalculatorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FlyoutFrameCalculatorTests.swift; sourceTree = "<group>"; };
@@ -116,7 +109,6 @@
 		DFA269966BB987D4A1B411A2 /* SpotifyLibraryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SpotifyLibraryTests.swift; sourceTree = "<group>"; };
 		E1F2A3B4C5D6E7F8A9B0C1D2 /* JSONLUsageParserTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = JSONLUsageParserTests.swift; sourceTree = "<group>"; };
 		F2E3D4C5B6A7E8F9A0B1C2D3 /* Contents/Helpers/NowPlayingTestClient */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = "compiled.mach-o.executable"; path = Contents/Helpers/NowPlayingTestClient; sourceTree = "<group>"; };
-		F4C1DD09EC134302938E84F6 /* MediaRemoteAdapter.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MediaRemoteAdapter.framework; path = Frameworks/MediaRemoteAdapter.framework; sourceTree = SOURCE_ROOT; };
 		F54406E72CD4987A00C7AFD9 /* Atoll.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Atoll.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F6B7C8D9E0F1A2B3C4D5E6F7 /* NewAPIUsageTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NewAPIUsageTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -232,15 +224,6 @@
 			path = DynamicIslandTests;
 			sourceTree = "<group>";
 		};
-		7E81303F2E3FB40500E08F3F /* mediaremote-adapter */ = {
-			isa = PBXGroup;
-			children = (
-				7E81303D2E3FB40500E08F3F /* mediaremote-adapter.pl */,
-				F4C1DD09EC134302938E84F6 /* MediaRemoteAdapter.framework */,
-			);
-			path = "mediaremote-adapter";
-			sourceTree = "<group>";
-		};
 		7E81304F2E3FB42700E08F3F /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -258,8 +241,6 @@
 		7E8840D52E9A341F00C5CB8C /* LottieAnimations */ = {
 			isa = PBXGroup;
 			children = (
-				7E6856472EA963FD00D261F5 /* Lock.json */,
-				A70F1A022F90000100F1A001 /* FingerprintScan.json */,
 				7E8840D62E9A346700C5CB8C /* Dog waiting.json */,
 				7E9911AF2EFD7D1B002EDFD5 /* Reindeer.json */,
 				7E8840D82E9A347000C5CB8C /* Moody Dog.json */,
@@ -291,7 +272,6 @@
 				7EA69B1C2F5AE15C00EB2D16 /* Contents */,
 				7E8840D52E9A341F00C5CB8C /* LottieAnimations */,
 				7E81304F2E3FB42700E08F3F /* Frameworks */,
-				7E81303F2E3FB40500E08F3F /* mediaremote-adapter */,
 				F54406E92CD4987A00C7AFD9 /* DynamicIsland */,
 				F54406E82CD4987A00C7AFD9 /* Products */,
 				BF9102C8771E45168EF97D18 /* DynamicIslandUITests */,
@@ -456,10 +436,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7E9918722EFDAE5B002EDFD5 /* MediaRemoteAdapter.framework in Resources */,
-				7E8130402E3FB40500E08F3F /* mediaremote-adapter.pl in Resources */,
-				7E6856482EA963FD00D261F5 /* Lock.json in Resources */,
-				A70F1A012F90000100F1A001 /* FingerprintScan.json in Resources */,
 				7E8840D92E9A347000C5CB8C /* Moody Dog.json in Resources */,
 				7E9911B02EFD7D1B002EDFD5 /* Reindeer.json in Resources */,
 				7E8840D72E9A346700C5CB8C /* Dog waiting.json in Resources */,
@@ -805,7 +781,6 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)",
 					"$(PROJECT_DIR)/Frameworks",
-					"$(PROJECT_DIR)/mediaremote-adapter",
 				);
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = DynamicIsland/Info.plist;
@@ -879,7 +854,6 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)",
 					"$(PROJECT_DIR)/Frameworks",
-					"$(PROJECT_DIR)/mediaremote-adapter",
 				);
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = DynamicIsland/Info.plist;
