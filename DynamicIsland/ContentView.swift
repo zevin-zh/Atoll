@@ -45,6 +45,7 @@ struct ContentView: View {
     /// the offset that follows does not change it, so there is no feedback.
     @State private var closedContentWidth: CGFloat = 0
     @ObservedObject var capsLockManager = CapsLockManager.shared
+    @ObservedObject var localSendService = LocalSendService.shared
     @ObservedObject var shelfState = ShelfStateViewModel.shared
     
     @Default(.showCapsLockLabel) var showCapsLockLabel
@@ -253,6 +254,19 @@ struct ContentView: View {
         shouldHideUntilHover && !lockScreenManager.isLocked
     }
     
+    /// Whether the LocalSend live activity should be shown
+    private var localSendLiveActivityActive: Bool {
+        localSendService.isSending || 
+        localSendService.transferState == .completed ||
+        isLocalSendFailedOrRejected
+    }
+    
+    private var isLocalSendFailedOrRejected: Bool {
+        if case .failed = localSendService.transferState { return true }
+        if case .rejected = localSendService.transferState { return true }
+        return false
+    }
+
     /// Pill shape for Dynamic Island mode with animated corner radius transitions.
     private var currentPillShape: DynamicIslandPillShape {
         let radius: CGFloat
@@ -412,6 +426,13 @@ struct ContentView: View {
                 // Recheck hover state when popovers are closed
                 runAfter(0.1) {
                     if vm.notchState == .open && !shouldPreventAutoClose() && !isHovering {
+                        vm.close()
+                    }
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .sharingDidFinish)) { _ in
+                runAfter(0.1) {
+                    if vm.notchState == .open && !isHovering && !shouldPreventAutoClose() {
                         vm.close()
                     }
                 }
@@ -991,7 +1012,7 @@ struct ContentView: View {
         // Without this, the hover-exit timer closes the panel mid-drag, tearing
         // down the NSView that is acting as the drag source and cancelling the
         // session — an independent second cause of "drag-out doesn't work".
-        coordinator.firstLaunch || hasAnyActivePopovers() || vm.isAutoCloseSuppressed || shelfState.isDraggingOutItem || ClipboardManager.shared.isDraggingItem
+        coordinator.firstLaunch || hasAnyActivePopovers() || vm.isAutoCloseSuppressed || shelfState.isDraggingOutItem || ClipboardManager.shared.isDraggingItem || SharingStateManager.shared.preventNotchClose
     }
     
     // Helper to prevent rapid haptic feedback

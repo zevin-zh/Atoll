@@ -42,6 +42,8 @@ struct TabModel: Identifiable {
 
 struct TabSelectionView: View {
     @ObservedObject var coordinator = DynamicIslandViewCoordinator.shared
+    @StateObject private var quickShareService = QuickShareService.shared
+    @Default(.quickShareProvider) private var quickShareProvider
     @State private var showQuickSharePopover = false
     @Default(.showMirror) private var showMirror
     @Default(.showStandardMediaControls) private var showStandardMediaControls
