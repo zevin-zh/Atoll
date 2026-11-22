@@ -1006,8 +1006,7 @@ struct ContentView: View {
     
     // Helper function to check if any popovers are active
     private func hasAnyActivePopovers() -> Bool {
-     return vm.isClipboardPopoverActive ||
-         vm.isMediaOutputPopoverActive
+        vm.isMediaOutputPopoverActive
     }
 
     private func shouldPreventAutoClose() -> Bool {

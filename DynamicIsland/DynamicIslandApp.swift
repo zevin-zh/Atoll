@@ -53,6 +53,7 @@ struct DynamicNotchApp: App {
             LaunchAtLoginToggle()
             GrantAllPermissionsButton()
             Divider()
+            LayoutPicker()
             ShowMenuBarIconToggle()
             Divider()
             Button("重启 Z-island") {
@@ -128,6 +129,36 @@ struct GrantAllPermissionsButton: View {
         } label: {
             Label("一键授权全部权限", systemImage: "checkmark.shield")
         }
+    }
+}
+
+/// 在默认布局与简约布局之间切换。
+///
+/// 两套布局的展开尺寸不同，而窗口尺寸只在开岛时算一次；所以岛上还开着时
+/// 先把它收起，免得切换后停在上一个布局的尺寸上。
+struct LayoutPicker: View {
+    private var layout: Binding<Bool> {
+        Binding(
+            get: { Defaults[.enableMinimalisticUI] },
+            set: { isMinimalistic in
+                // 避免重复写入触发一轮没必要的窗口重算。
+                guard Defaults[.enableMinimalisticUI] != isMinimalistic else { return }
+                if AppDelegate.shared?.vm.notchState == .open {
+                    AppDelegate.shared?.vm.close()
+                }
+                Defaults[.enableMinimalisticUI] = isMinimalistic
+            }
+        )
+    }
+
+    var body: some View {
+        Picker(selection: layout) {
+            Text("默认布局").tag(false)
+            Text("简约布局").tag(true)
+        } label: {
+            Label("布局", systemImage: "rectangle.3.group")
+        }
+        .pickerStyle(.inline)
     }
 }
 
@@ -974,55 +1005,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 ClipboardManager.shared.startMonitoring()
             }
 
-            switch Defaults[.clipboardDisplayMode] {
-            case .panel:
-                ClipboardPanelManager.shared.toggleClipboardPanel()
-            case .popover:
-                if vm.notchState == .closed {
-                    vm.open()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        NotificationCenter.default.post(name: NSNotification.Name("ToggleClipboardPopover"), object: nil)
-                    }
+            if vm.notchState == .closed {
+                vm.open()
+                coordinator.currentView = .clipboard
+            } else {
+                if coordinator.currentView == .clipboard {
+                    vm.close()
                 } else {
-                    NotificationCenter.default.post(name: NSNotification.Name("ToggleClipboardPopover"), object: nil)
-                }
-            case .separateTab:
-                if vm.notchState == .closed {
-                    vm.open()
                     coordinator.currentView = .clipboard
-                } else {
-                    if coordinator.currentView == .clipboard {
-                        vm.close()
-                    } else {
-                        coordinator.currentView = .clipboard
-                    }
-                }
-            case .notchTab:
-                // Act on the notch under the cursor, matching toggleNotchOpen: with
-                // showOnAllDisplays the rendered windows use viewModels[screen], so mutating
-                // the primary vm could flip currentView without opening a visible notch.
-                var activeVM = vm
-                if Defaults[.showOnAllDisplays] {
-                    let mouseLocation = NSEvent.mouseLocation
-                    for screen in NSScreen.screens where screen.frame.contains(mouseLocation) {
-                        if let screenViewModel = viewModels[screen] {
-                            activeVM = screenViewModel
-                            break
-                        }
-                    }
-                }
-                // Cancel any pending auto-close armed by toggleNotchOpen, so it can't fire
-                // and close the notch a few seconds after this shortcut opens/switches to it.
-                cancelPendingNotchAutoClose()
-                if activeVM.notchState == .closed {
-                    activeVM.open()
-                    coordinator.currentView = .clipboard
-                } else {
-                    if coordinator.currentView == .clipboard {
-                        activeVM.close()
-                    } else {
-                        coordinator.currentView = .clipboard
-                    }
                 }
             }
         }

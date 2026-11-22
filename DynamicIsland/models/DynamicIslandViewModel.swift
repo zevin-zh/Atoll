@@ -43,7 +43,6 @@ class DynamicIslandViewModel: NSObject, ObservableObject {
     
     @Published var hideOnClosed: Bool = true
     @Published var isBatteryPopoverActive: Bool = false
-    @Published var isClipboardPopoverActive: Bool = false
     /// Whether any output picker popover is open.
     ///
     /// Four separate views can present one of these -- the media output and
@@ -112,9 +111,9 @@ class DynamicIslandViewModel: NSObject, ObservableObject {
     }
 
     private func focusClipboardTabIfNeeded() {
+        // 简约模式没有默认布局的页签栏，不抢焦点。
         guard !Defaults[.enableMinimalisticUI] else { return }
         guard Defaults[.enableClipboardManager] else { return }
-        guard Defaults[.clipboardDisplayMode] == .separateTab else { return }
         guard let lastCopyDate = ClipboardManager.shared.lastCopiedItemDate else { return }
         guard Date().timeIntervalSince(lastCopyDate) <= clipboardFocusWindow else { return }
         guard coordinator.currentView != .clipboard else { return }

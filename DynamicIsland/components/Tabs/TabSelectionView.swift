@@ -57,17 +57,11 @@ struct TabSelectionView: View {
             tabsArray.append(TabModel(label: "暂存", icon: "tray.fill", view: .shelf))
         }
 
-        // 简约模式：只保留暂存架 + 剪贴板。
-        if Defaults[.enableMinimalisticUI] {
-            if Defaults[.enableClipboardManager] && Defaults[.clipboardDisplayMode] == .separateTab {
-                tabsArray.append(TabModel(label: "剪贴板", icon: "doc.on.clipboard", view: .clipboard))
-            }
-            return tabsArray
-        }
-
-        if Defaults[.enableClipboardManager] && Defaults[.clipboardDisplayMode] == .separateTab {
+        // 剪贴板在默认布局和简约布局下都是独立页签。
+        if Defaults[.enableClipboardManager] {
             tabsArray.append(TabModel(label: "剪贴板", icon: "doc.on.clipboard", view: .clipboard))
         }
+
         return tabsArray
     }
     var body: some View {

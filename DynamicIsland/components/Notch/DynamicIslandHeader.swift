@@ -25,9 +25,7 @@ struct DynamicIslandHeader: View {
     @ObservedObject var coordinator = DynamicIslandViewCoordinator.shared
     @ObservedObject var clipboardManager = ClipboardManager.shared
     @ObservedObject var shelfState = ShelfStateViewModel.shared
-    @State private var showClipboardPopover = false
     @Default(.showClipboardIcon) var showClipboardIcon
-    @Default(.clipboardDisplayMode) var clipboardDisplayMode
     @Default(.enableMinimalisticUI) var enableMinimalisticUI
     
     /// Point size per symbol, so the row reads as one size.
@@ -111,25 +109,13 @@ struct DynamicIslandHeader: View {
                         .buttonStyle(PlainButtonStyle())
                     }
                     
-                    if Defaults[.enableClipboardManager]
-                        && showClipboardIcon
-                        && clipboardDisplayMode != .separateTab {
+                    if Defaults[.enableClipboardManager] && showClipboardIcon {
                         Button(action: {
-                            // Switch behavior based on display mode
-                            switch clipboardDisplayMode {
-                            case .panel:
-                                ClipboardPanelManager.shared.toggleClipboardPanel()
-                            case .popover:
-                                showClipboardPopover.toggle()
-                            case .separateTab:
-                                coordinator.currentView = .clipboard
-                            case .notchTab:
-                                // Cancel the auto-close armed by toggleNotchOpen so it can't
-                                // close the notch shortly after we switch into the clipboard tab.
-                                AppDelegate.shared?.cancelPendingNotchAutoClose()
-                                // Toggle: a second tap on the clipboard button leaves the tab.
-                                coordinator.currentView = (coordinator.currentView == .clipboard) ? .shelf : .clipboard
-                            }
+                            // Cancel the auto-close armed by toggleNotchOpen so it can't
+                            // close the notch shortly after we switch into the clipboard tab.
+                            AppDelegate.shared?.cancelPendingNotchAutoClose()
+                            // Toggle: a second tap on the clipboard button leaves the tab.
+                            coordinator.currentView = (coordinator.currentView == .clipboard) ? .shelf : .clipboard
                         }) {
                             Capsule()
                                 .fill(.black)
@@ -139,19 +125,6 @@ struct DynamicIslandHeader: View {
                                 }
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .popover(isPresented: $showClipboardPopover, arrowEdge: .bottom) {
-                            ClipboardPopover()
-                        }
-                        .onChange(of: showClipboardPopover) { isActive in
-                            vm.isClipboardPopoverActive = isActive
-                            
-                            // If popover was closed, trigger a hover recheck
-                            if !isActive {
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                    vm.shouldRecheckHover.toggle()
-                                }
-                            }
-                        }
                         .onAppear {
                             if Defaults[.enableClipboardManager] && !clipboardManager.isMonitoring {
                                 clipboardManager.startMonitoring()
@@ -170,37 +143,12 @@ struct DynamicIslandHeader: View {
         }
         .foregroundColor(.gray)
         .environmentObject(vm)
-        .onChange(of: coordinator.shouldToggleClipboardPopover) { _ in
-            // Only toggle if clipboard is enabled
-            if Defaults[.enableClipboardManager] {
-                switch clipboardDisplayMode {
-                case .panel:
-                    ClipboardPanelManager.shared.toggleClipboardPanel()
-                case .popover:
-                    showClipboardPopover.toggle()
-                case .separateTab:
-                    if coordinator.currentView == .clipboard {
-                        coordinator.currentView = .shelf
-                    } else {
-                        coordinator.currentView = .clipboard
-                    }
-                case .notchTab:
-                    // Same as the header button: don't let the armed auto-close fire after
-                    // we switch into the clipboard tab.
-                    AppDelegate.shared?.cancelPendingNotchAutoClose()
-                    if coordinator.currentView == .clipboard {
-                        coordinator.currentView = .shelf
-                    } else {
-                        coordinator.currentView = .clipboard
-                    }
-                }
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ToggleClipboardPopover"))) { _ in
-            // Handle keyboard shortcut for popover mode
-            if Defaults[.enableClipboardManager] && clipboardDisplayMode == .popover {
-                showClipboardPopover.toggle()
-            }
+        .onChange(of: coordinator.shouldToggleClipboardPopover) { _, _ in
+            guard Defaults[.enableClipboardManager] else { return }
+            // Same as the header button: don't let the armed auto-close fire after
+            // we switch into the clipboard tab.
+            AppDelegate.shared?.cancelPendingNotchAutoClose()
+            coordinator.currentView = (coordinator.currentView == .clipboard) ? .shelf : .clipboard
         }
     }
 }

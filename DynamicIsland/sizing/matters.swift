@@ -74,7 +74,7 @@ func enabledStandardTabCount() -> Int {
     }
 
     // Clipboard tab
-    if Defaults[.enableClipboardManager] && Defaults[.clipboardDisplayMode] == .separateTab {
+    if Defaults[.enableClipboardManager] {
         count += 1
     }
 
