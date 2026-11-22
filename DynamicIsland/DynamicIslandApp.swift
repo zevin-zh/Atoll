@@ -137,16 +137,20 @@ struct GrantAllPermissionsButton: View {
 /// 两套布局的展开尺寸不同，而窗口尺寸只在开岛时算一次；所以岛上还开着时
 /// 先把它收起，免得切换后停在上一个布局的尺寸上。
 struct LayoutPicker: View {
+    // 必须用 @Default 持有：只读 `Defaults[...]` 不会让视图订阅变化，
+    // 菜单里的对号就会停在打开菜单时的旧值上。
+    @Default(.enableMinimalisticUI) private var isMinimalistic
+
     private var layout: Binding<Bool> {
         Binding(
-            get: { Defaults[.enableMinimalisticUI] },
-            set: { isMinimalistic in
+            get: { isMinimalistic },
+            set: { newValue in
                 // 避免重复写入触发一轮没必要的窗口重算。
-                guard Defaults[.enableMinimalisticUI] != isMinimalistic else { return }
+                guard isMinimalistic != newValue else { return }
                 if AppDelegate.shared?.vm.notchState == .open {
                     AppDelegate.shared?.vm.close()
                 }
-                Defaults[.enableMinimalisticUI] = isMinimalistic
+                isMinimalistic = newValue
             }
         )
     }
