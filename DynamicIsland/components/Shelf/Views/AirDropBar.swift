@@ -19,7 +19,6 @@
 
 import AppKit
 import SwiftUI
-import UniformTypeIdentifiers
 
 /// 暂存架左侧的隔空投送入口，60pt 窄条。
 ///
@@ -32,8 +31,16 @@ struct AirDropBar: View {
     @EnvironmentObject private var vm: DynamicIslandViewModel
     @StateObject private var shelf = ShelfStateViewModel.shared
 
-    @State private var isTargeted = false
     @State private var isSending = false
+    @State private var isHovering = false
+
+    /// 只用于鼠标悬停的视觉反馈。
+    ///
+    /// 这里**不能**挂 `onDrop`：暂存架本体、外层拖拽探测器都往
+    /// `dragDetectorTargeting` 写值，多一个视图抢同一个标记，任何一处写 false
+    /// 都会让外层以为拖拽离开 → 收起岛 → 条消失 → 拖拽重新命中，来回抽搐。
+    /// 所以拖文件仍然交给暂存架接住，这条只负责点击投送。
+    private var isTargeted: Bool { isHovering }
 
     var body: some View {
         ZStack {
@@ -69,7 +76,6 @@ struct AirDropBar: View {
                         .frame(width: 26, height: 26)
                         .foregroundStyle(isTargeted ? Color.accentColor : Color.gray)
                         .scaleEffect(isTargeted ? 1.06 : 1.0)
-                        .animation(.spring(response: 0.36, dampingFraction: 0.7), value: isTargeted)
                 }
 
                 Text(isSending ? "发送中…" : "隔空投送")
@@ -82,9 +88,7 @@ struct AirDropBar: View {
             .frame(maxWidth: .infinity)
         }
         .contentShape(RoundedRectangle(cornerRadius: 12))
-        .onDrop(of: [.fileURL, .url], isTargeted: $isTargeted) { providers in
-            handleDrop(providers)
-        }
+        .onHover { isHovering = $0 }
         .onTapGesture {
             sendShelfItems()
         }
@@ -115,53 +119,6 @@ struct AirDropBar: View {
                 }
             }
         }
-    }
-
-    /// 拖放：只发这一次拖进来的文件，不写入暂存架。
-    private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
-        guard !providers.isEmpty else { return false }
-
-        let group = DispatchGroup()
-        let lock = NSLock()
-        var urls: [URL] = []
-
-        for provider in providers {
-            for type in [UTType.fileURL.identifier, UTType.url.identifier] {
-                guard provider.hasItemConformingToTypeIdentifier(type) else { continue }
-                group.enter()
-                provider.loadItem(forTypeIdentifier: type, options: nil) { item, _ in
-                    defer { group.leave() }
-
-                    let url: URL?
-                    switch item {
-                    case let data as Data:
-                        url = URL(dataRepresentation: data, relativeTo: nil)
-                    case let nsURL as NSURL:
-                        url = nsURL as URL
-                    case let direct as URL:
-                        url = direct
-                    default:
-                        url = nil
-                    }
-
-                    if let url {
-                        lock.lock()
-                        urls.append(url)
-                        lock.unlock()
-                    }
-                }
-                break
-            }
-        }
-
-        group.notify(queue: .main) {
-            if urls.isEmpty {
-                NSSound.beep()
-            } else {
-                perform(urls)
-            }
-        }
-        return true
     }
 
     private func perform(_ urls: [URL]) {

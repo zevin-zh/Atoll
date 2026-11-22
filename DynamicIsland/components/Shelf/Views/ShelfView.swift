@@ -36,9 +36,11 @@ struct ShelfView: View {
                 .frame(maxHeight: .infinity)
                 .environmentObject(vm)
             panel
-                .onDrop(of: [.fileURL, .url, .utf8PlainText, .plainText, .data], isTargeted: $vm.dragDetectorTargeting) { providers in
-                    handleDrop(providers: providers)
-                }
+        }
+        // 单一拖拽目标：投送条和网格都属于暂存架，落点一律按「导入」处理，
+        // 避免多个视图共用 isTargeted 标记导致反复开合。
+        .onDrop(of: [.fileURL, .url, .utf8PlainText, .plainText, .data], isTargeted: $vm.dragDetectorTargeting) { providers in
+            handleDrop(providers: providers)
         }
     }
 
@@ -94,9 +96,6 @@ struct ShelfView: View {
                 }
                 .padding(-spacing)
                 .scrollIndicators(.never)
-                .onDrop(of: [.fileURL, .url, .utf8PlainText, .plainText, .data], isTargeted: $vm.dragDetectorTargeting) { providers in
-                    handleDrop(providers: providers)
-                }
             }
         }
         .onAppear {
