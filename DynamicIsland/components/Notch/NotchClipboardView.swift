@@ -192,10 +192,10 @@ struct NotchClipboardView: View {
         VStack(spacing: 8) {
             Image(systemName: "doc.on.clipboard")
                 .font(.system(size: 32))
-                .foregroundStyle(.secondary.opacity(0.3))
+                .foregroundStyle(.white.opacity(0.28))
             Text("No copies yet")
                 .font(.headline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.white.opacity(0.6))
         }
         // 空状态必须撑住高度：内容为 0 时岛背景会跟着塌成一团甚至消失。
         .frame(maxWidth: .infinity, minHeight: 140, maxHeight: .infinity)
@@ -236,18 +236,18 @@ struct ClipboardGridCard: View {
             thumbnail
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.preview)
-                    .font(.system(size: 13))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                     .multilineTextAlignment(.leading)
                 HStack(spacing: 6) {
                     Text(item.type.displayName)
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(.white.opacity(0.6))
                     Spacer(minLength: 0)
                     Text(timeAgoString(from: item.timestamp))
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(.white.opacity(0.6))
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
