@@ -23,7 +23,7 @@
 import AppKit
 import Foundation
 
-/// A service providing common actions for `ShelfItem`s, such as opening, revealing, or copying paths.
+/// A service providing common actions for `ShelfItem`s, such as opening or removing them.
 @MainActor
 enum ShelfActionService {
 
@@ -41,20 +41,6 @@ enum ShelfActionService {
         }
     }
 
-    static func reveal(_ item: ShelfItem) {
-        guard case .file(let bookmark) = item.kind else { return }
-        handleBookmarkedFile(bookmark) { url in
-            NSWorkspace.shared.activateFileViewerSelecting([url])
-        }
-    }
-
-    static func copyPath(_ item: ShelfItem) {
-        guard case .file(let bookmark) = item.kind else { return }
-        handleBookmarkedFile(bookmark) { url in
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(url.path, forType: .string)
-        }
-    }
 
     static func remove(_ item: ShelfItem) {
         ShelfStateViewModel.shared.remove(item)

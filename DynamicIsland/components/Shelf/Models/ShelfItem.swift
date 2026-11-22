@@ -71,8 +71,8 @@ struct ShelfItem: Identifiable, Codable, Equatable, Sendable {
     // Cached display name and icon to avoid blocking on bookmark resolution
     var cachedDisplayName: String?
     var cachedIconData: Data?
-    /// File path captured at drop time. Lets dedup (`identityKey`), drag-out and
-    /// the context menu get a URL without resolving the bookmark — i.e. without
+    /// File path captured at drop time. Lets dedup (`identityKey`) and drag-out
+    /// get a URL without resolving the bookmark — i.e. without
     /// disk I/O on the main actor. Absent from pre-existing `items.json` files
     /// (Optional, so `decodeIfPresent` keeps old payloads decoding fine); those
     /// items are backfilled off the main actor at launch.
@@ -256,8 +256,8 @@ extension ShelfItem {
     /// time when available (no disk I/O), otherwise falls back to a plain
     /// synchronous bookmark resolve.
     ///
-    /// Deliberately does *not* stat the path: this is called once per menu entry
-    /// while building the context menu, and a `fileExists` check per call would
+    /// Deliberately does *not* stat the path: drag-out asks for it on every
+    /// drag and a `fileExists` check per call would
     /// stall the main actor on an unreachable network mount. Deleted files are
     /// pruned asynchronously by `ShelfStateViewModel.cleanupInvalidItems()`.
     var resolvedFileURL: URL? {

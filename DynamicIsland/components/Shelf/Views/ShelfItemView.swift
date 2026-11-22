@@ -24,8 +24,6 @@ import AppKit
 import SwiftUI
 import Defaults
 
-import QuickLook
-
 /// Layout metrics for the hover-revealed remove (x) button on a shelf item.
 /// Shared between the SwiftUI overlay and the AppKit drag view's hit-testing so
 /// the corner the button occupies is excluded from the drag/click handler.
@@ -39,20 +37,20 @@ private enum ShelfRemoveButton {
     static let hitRegion: CGFloat = 30
 }
 
+/// Distance the pointer must travel before a press on a shelf item turns from a
+/// click into a drag-out.
+private enum ShelfDragMetrics {
+    static let threshold: CGFloat = 3.0
+}
+
 struct ShelfItemView: View {
     let item: ShelfItem
     @EnvironmentObject var vm: DynamicIslandViewModel
-    @ObservedObject var selection = ShelfSelectionModel.shared
     @StateObject private var viewModel: ShelfItemViewModel
-    @EnvironmentObject private var quickLookService: QuickLookService
-    @State private var showStack = false
     @State private var cachedPreviewImage: NSImage?
     @State private var debouncedDropTarget = false
     @State private var isHovering = false
 
-    private var isSelected: Bool { viewModel.isSelected }
-    private var shouldHideDuringDrag: Bool { selection.isDragging && selection.isSelected(item.id) && false }
-    
     init(item: ShelfItem) {
         self.item = item
         _viewModel = StateObject(wrappedValue: ShelfItemViewModel(item: item))
@@ -60,63 +58,54 @@ struct ShelfItemView: View {
 
     var body: some View {
         ZStack {
-            if !shouldHideDuringDrag {
-                VStack(alignment: .center, spacing: 2) {
-                    iconView
-                    textView
-                }
-                .frame(width: 70)
-                .padding(.vertical, 10)
-                .padding(.horizontal, 5)
-                .background(backgroundView)
-                .contentShape(Rectangle())
-                .animation(.easeInOut(duration: 0.1), value: debouncedDropTarget)
-                .animation(.easeInOut(duration: 0.1), value: isSelected)
-                .overlay(alignment: .topTrailing) {
-                    if isHovering {
-                        removeButton
-                    }
-                }
-                // Keep removal reachable without hover (VoiceOver / keyboard):
-                // expose the item as one element with a named remove action.
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(viewModel.displayName.isEmpty ? Text("暂存项") : Text(viewModel.displayName))
-                .accessibilityAction(named: Text("从暂存架移除")) {
-                    ShelfActionService.remove(item)
-                }
-
-                DraggableClickHandler(
-                    item: item,
-                    viewModel: viewModel,
-                    isHovering: isHovering,
-                    // Hover is detected here (in the AppKit drag view via a
-                    // tracking area) rather than with SwiftUI's `.onHover`,
-                    // because this NSView sits on top of the cell and
-                    // intercepts the mouse-tracking `.onHover` would need.
-                    onHoverChange: { hovering in
-                        withAnimation(.smooth(duration: 0.15)) {
-                            isHovering = hovering
-                        }
-                    },
-                    cachedPreviewImage: $cachedPreviewImage,
-                    dragPreviewContent: {
-                        DragPreviewView(thumbnail: viewModel.thumbnail ?? viewModel.icon, displayName: viewModel.displayName)
-                    },
-                    onRightClick: viewModel.handleRightClick,
-                    onClick: { event, nsview in
-                        viewModel.handleClick(event: event, view: nsview)
-                    },
-                    // `isDragging` kept the notch open for the duration of the
-                    // drag; the hover-exit that would have closed it already
-                    // came and went, so ask for a fresh evaluation.
-                    onDragEnded: { vm.shouldRecheckHover.toggle() }
-                )
-            } else {
-                Color.clear
-                    .frame(width: 70)
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 5)
+            VStack(alignment: .center, spacing: 2) {
+                iconView
+                textView
             }
+            .frame(width: 70)
+            .padding(.vertical, 10)
+            .padding(.horizontal, 5)
+            .background(backgroundView)
+            .contentShape(Rectangle())
+            .animation(.easeInOut(duration: 0.1), value: debouncedDropTarget)
+            .overlay(alignment: .topTrailing) {
+                if isHovering {
+                    removeButton
+                }
+            }
+            // Keep removal reachable without hover (VoiceOver / keyboard):
+            // expose the item as one element with a named remove action.
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(viewModel.displayName.isEmpty ? Text("暂存项") : Text(viewModel.displayName))
+            .accessibilityAction(named: Text("从暂存架移除")) {
+                ShelfActionService.remove(item)
+            }
+
+            DraggableClickHandler(
+                item: item,
+                viewModel: viewModel,
+                isHovering: isHovering,
+                // Hover is detected here (in the AppKit drag view via a
+                // tracking area) rather than with SwiftUI's `.onHover`,
+                // because this NSView sits on top of the cell and
+                // intercepts the mouse-tracking `.onHover` would need.
+                onHoverChange: { hovering in
+                    withAnimation(.smooth(duration: 0.15)) {
+                        isHovering = hovering
+                    }
+                },
+                cachedPreviewImage: $cachedPreviewImage,
+                dragPreviewContent: {
+                    DragPreviewView(thumbnail: viewModel.thumbnail ?? viewModel.icon, displayName: viewModel.displayName)
+                },
+                onClick: { event in
+                    viewModel.handleClick(event: event)
+                },
+                // `isDraggingOutItem` keeps the notch open for the duration of
+                // the drag; the hover-exit that would have closed it already
+                // came and went, so ask for a fresh evaluation.
+                onDragEnded: { vm.shouldRecheckHover.toggle() }
+            )
         }
         .onChange(of: viewModel.isDropTargeted) { _, targeted in
             vm.dragDetectorTargeting = targeted
@@ -134,9 +123,6 @@ struct ShelfItemView: View {
                     cachedPreviewImage = await renderDragPreview()
                 }
             }
-            viewModel.onQuickLookRequest = { urls in
-                quickLookService.show(urls: urls, selectFirst: true)
-            }
         }
         .onChange(of: viewModel.thumbnail) { _, _ in
             // Invalidate cached preview when thumbnail changes
@@ -144,7 +130,6 @@ struct ShelfItemView: View {
                 cachedPreviewImage = await renderDragPreview()
             }
         }
-        .quickLookPresenter(using: quickLookService)
     }
 
     // MARK: - View Components
@@ -169,8 +154,7 @@ struct ShelfItemView: View {
     }
 
     /// Hover-revealed circular remove button in the top-trailing corner.
-    /// Removes just this item from the shelf via the same path as the
-    /// right-click "Remove" menu item (`ShelfActionService.remove`).
+    /// Removes just this item from the shelf via `ShelfActionService.remove`.
     /// Uses a `Button` (not a bare tap gesture) so it carries button
     /// semantics for VoiceOver; the item also exposes a hover-independent
     /// "Remove from Shelf" accessibility action (see `body`).
@@ -211,8 +195,6 @@ struct ShelfItemView: View {
     private var backgroundColor: Color {
         if debouncedDropTarget {
             return Color.accentColor.opacity(0.25)
-        } else if isSelected {
-            return Color.accentColor.opacity(0.15)
         } else {
             return Color.clear
         }
@@ -221,8 +203,6 @@ struct ShelfItemView: View {
     private var strokeColor: Color {
         if debouncedDropTarget {
             return Color.accentColor.opacity(0.9)
-        } else if isSelected {
-            return Color.accentColor.opacity(0.8)
         } else {
             return Color.clear
         }
@@ -231,8 +211,6 @@ struct ShelfItemView: View {
     private var strokeWidth: CGFloat {
         if debouncedDropTarget {
             return 3
-        } else if isSelected {
-            return 2
         } else {
             return 1
         }
@@ -259,18 +237,15 @@ private struct DraggableClickHandler<Content: View>: NSViewRepresentable {
     let onHoverChange: (Bool) -> Void
     @Binding var cachedPreviewImage: NSImage?
     @ViewBuilder let dragPreviewContent: () -> Content
-    let onRightClick: (NSEvent, NSView) -> Void
-    let onClick: (NSEvent, NSView) -> Void
+    let onClick: (NSEvent) -> Void
     let onDragEnded: () -> Void
 
     func makeNSView(context: Context) -> DraggableClickView {
         let view = DraggableClickView()
         view.item = item
-        view.viewModel = viewModel
         view.isHovering = isHovering
         view.onHoverChange = onHoverChange
         view.dragPreviewImage = cachedPreviewImage ?? renderDragPreview()
-        view.onRightClick = onRightClick
         view.onClick = onClick
         view.onDragEnded = onDragEnded
         return view
@@ -278,14 +253,12 @@ private struct DraggableClickHandler<Content: View>: NSViewRepresentable {
 
     func updateNSView(_ nsView: DraggableClickView, context: Context) {
         nsView.item = item
-        nsView.viewModel = viewModel
         nsView.isHovering = isHovering
         nsView.onHoverChange = onHoverChange
         // Only update preview if cached version is available
         if let cached = cachedPreviewImage {
             nsView.dragPreviewImage = cached
         }
-        nsView.onRightClick = onRightClick
         nsView.onClick = onClick
         nsView.onDragEnded = onDragEnded
     }
@@ -304,30 +277,16 @@ private struct DraggableClickHandler<Content: View>: NSViewRepresentable {
     }
     
     final class DraggableClickView: NSView, NSDraggingSource {
-        // Registered with `ShelfItemHitRegistry` so marquee selection can read
-        // this cell's frame without walking the view hierarchy.
-        var item: ShelfItem! {
-            didSet {
-                guard let id = item?.id, id != oldValue?.id else { return }
-                if let old = oldValue?.id {
-                    ShelfItemHitRegistry.shared.unregister(old, view: self)
-                }
-                if window != nil {
-                    ShelfItemHitRegistry.shared.register(self, for: id)
-                }
-            }
-        }
-        weak var viewModel: ShelfItemViewModel?
+        var item: ShelfItem!
         var dragPreviewImage: NSImage?
-        var onRightClick: ((NSEvent, NSView) -> Void)?
-        var onClick: ((NSEvent, NSView) -> Void)?
+        var onClick: ((NSEvent) -> Void)?
         var onDragEnded: (() -> Void)?
         var onHoverChange: ((Bool) -> Void)?
         var isHovering = false
 
         private var mouseDownEvent: NSEvent?
         private let dragThreshold: CGFloat = ShelfDragMetrics.threshold
-        private var draggedItems: [ShelfItem] = []
+        private var draggedItem: ShelfItem?
         private var didStartDragSession = false
 
         // Detect hover here (this NSView sits on top of the cell and would
@@ -342,16 +301,6 @@ private struct DraggableClickHandler<Content: View>: NSViewRepresentable {
                 userInfo: nil
             )
             addTrackingArea(area)
-        }
-
-        override func viewDidMoveToWindow() {
-            super.viewDidMoveToWindow()
-            guard let id = item?.id else { return }
-            if window != nil {
-                ShelfItemHitRegistry.shared.register(self, for: id)
-            } else {
-                ShelfItemHitRegistry.shared.unregister(id, view: self)
-            }
         }
 
         override func mouseEntered(with event: NSEvent) {
@@ -379,10 +328,6 @@ private struct DraggableClickHandler<Content: View>: NSViewRepresentable {
             return super.hitTest(point)
         }
 
-        override func rightMouseDown(with event: NSEvent) {
-            onRightClick?(event, self)
-        }
-        
         override func mouseDown(with event: NSEvent) {
             mouseDownEvent = event
             didStartDragSession = false
@@ -399,7 +344,7 @@ private struct DraggableClickHandler<Content: View>: NSViewRepresentable {
                 return
             }
 
-            onClick?(mouseDownEvent, self)
+            onClick?(mouseDownEvent)
         }
         
         override func mouseDragged(with event: NSEvent) {
@@ -415,66 +360,35 @@ private struct DraggableClickHandler<Content: View>: NSViewRepresentable {
             
             if dragDistance > dragThreshold {
                 didStartDragSession = true
-                prepareSelectionForDrag(using: mouseDownEvent)
                 startDragSession(with: event)
                 self.mouseDownEvent = nil
             } else {
                 super.mouseDragged(with: event)
             }
         }
-
-        private func prepareSelectionForDrag(using initialEvent: NSEvent) {
-            let flags = initialEvent.modifierFlags.intersection(.deviceIndependentFlagsMask)
-
-            if flags.contains(.shift) || flags.contains(.command) || flags.contains(.control) {
+        
+        private func startDragSession(with event: NSEvent) {
+            guard let writer = pasteboardWriter(for: item) else {
+                NSLog("⚠️ Skipping shelf item in drag: could not resolve a URL for \(item.id)")
                 return
             }
 
-            if !ShelfSelectionModel.shared.isSelected(item.id) {
-                ShelfSelectionModel.shared.selectSingle(item)
-            }
-        }
-        
-        private func startDragSession(with event: NSEvent) {
-            // Prepare dragging items
-            let selectedItems = ShelfSelectionModel.shared.selectedItems(in: ShelfStateViewModel.shared.items)
-            let itemsToDrag: [ShelfItem]
+            let draggingItem = NSDraggingItem(pasteboardWriter: writer)
 
-            if selectedItems.count > 1 && selectedItems.contains(where: { $0.id == item.id }) {
-                itemsToDrag = selectedItems
-            } else {
-                itemsToDrag = [item]
-            }
+            // Use the drag preview image
+            let image = dragPreviewImage ?? item.icon
+            let imageFrame = NSRect(
+                x: 0,
+                y: 0,
+                width: image.size.width,
+                height: image.size.height
+            )
+            draggingItem.setDraggingFrame(imageFrame, contents: image)
 
-            // Store items being dragged for auto-remove feature
-            draggedItems = itemsToDrag
+            // Store the item being dragged for the auto-remove feature
+            draggedItem = item
 
-            // Create dragging items for AppKit
-            var draggingItems: [NSDraggingItem] = []
-
-            for dragItem in itemsToDrag {
-                guard let writer = pasteboardWriter(for: dragItem) else {
-                    NSLog("⚠️ Skipping shelf item in drag: could not resolve a URL for \(dragItem.id)")
-                    continue
-                }
-                let draggingItem = NSDraggingItem(pasteboardWriter: writer)
-
-                // Use the drag preview image
-                let image = dragPreviewImage ?? dragItem.icon
-                let imageFrame = NSRect(
-                    x: 0,
-                    y: 0,
-                    width: image.size.width,
-                    height: image.size.height
-                )
-                draggingItem.setDraggingFrame(imageFrame, contents: image)
-
-                draggingItems.append(draggingItem)
-            }
-
-            guard !draggingItems.isEmpty else { return }
-
-            beginDraggingSession(with: draggingItems, event: event, source: self)
+            beginDraggingSession(with: [draggingItem], event: event, source: self)
         }
 
         /// `resolvedFileURL` reads the path captured at drop time, which is the
@@ -525,20 +439,21 @@ private struct DraggableClickHandler<Content: View>: NSViewRepresentable {
         }
 
         func draggingSession(_ session: NSDraggingSession, willBeginAt screenPoint: NSPoint) {
-            ShelfSelectionModel.shared.beginDrag()
+            // Keeps the notch open while the cursor is away from it.
+            ShelfStateViewModel.shared.beginDraggingOutItem()
         }
 
 
         func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint, operation: NSDragOperation) {
-            ShelfSelectionModel.shared.endDrag()
+            ShelfStateViewModel.shared.endDraggingOutItem()
 
             // Auto-remove items from shelf if enabled and drag succeeded
             if Defaults[.autoRemoveShelfItems] && !operation.isEmpty {
-                for item in draggedItems {
-                    ShelfStateViewModel.shared.remove(item)
+                if let draggedItem {
+                    ShelfStateViewModel.shared.remove(draggedItem)
                 }
             }
-            draggedItems.removeAll()
+            draggedItem = nil
             onDragEnded?()
         }
         

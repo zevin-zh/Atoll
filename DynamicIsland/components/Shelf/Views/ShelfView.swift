@@ -23,40 +23,9 @@
 import SwiftUI
 import AppKit
 
-private struct ShelfBackgroundClickCatcher: NSViewRepresentable {
-    let onClick: () -> Void
-
-    func makeNSView(context: Context) -> BackgroundClickView {
-        let view = BackgroundClickView()
-        view.onClick = onClick
-        return view
-    }
-
-    func updateNSView(_ nsView: BackgroundClickView, context: Context) {
-        nsView.onClick = onClick
-    }
-
-    final class BackgroundClickView: NSView {
-        var onClick: (() -> Void)?
-
-        override func mouseUp(with event: NSEvent) {
-            onClick?()
-        }
-    }
-}
-
-private struct ShelfViewportSizeKey: PreferenceKey {
-    static let defaultValue: CGSize = .zero
-    static func reduce(value: inout CGSize, nextValue: () -> CGSize) { value = nextValue() }
-}
-
 struct ShelfView: View {
     @EnvironmentObject var vm: DynamicIslandViewModel
     @StateObject var tvm = ShelfStateViewModel.shared
-    @StateObject var selection = ShelfSelectionModel.shared
-    @StateObject private var quickLookService = QuickLookService()
-    @State private var autoCloseToken = UUID()
-    @State private var viewportSize: CGSize = .zero
     private let spacing: CGFloat = 8
 
     var body: some View {
@@ -71,53 +40,15 @@ struct ShelfView: View {
                     handleDrop(providers: providers)
                 }
         }
-        // Bind Quick Look to shelf selection. Skipped mid-marquee so a sweep
-        // doesn't spawn a resolve Task per intermediate selection.
-        .onChange(of: selection.selectedIDs) {
-            guard !selection.isMarqueeSelecting else { return }
-            updateQuickLookSelection()
-        }
-        .onChange(of: selection.isMarqueeSelecting) { _, active in
-            if !active { updateQuickLookSelection() }
-        }
-        .onDisappear {
-            vm.setAutoCloseSuppression(false, token: autoCloseToken)
-        }
-        .quickLookPresenter(using: quickLookService)
     }
 
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
-        guard !selection.isDragging, !selection.isMarqueeSelecting else { return false }
+        // A drag that started on an item is already carrying files out of the
+        // shelf; dropping it back onto the panel must not re-import it.
+        guard !tvm.isDraggingOutItem else { return false }
         vm.dropEvent = true
         ShelfStateViewModel.shared.load(providers)
         return true
-    }
-    
-    private func updateQuickLookSelection() {
-        guard quickLookService.isQuickLookOpen && !selection.selectedIDs.isEmpty else { return }
-
-        let selectedItems = selection.selectedItems(in: tvm.items)
-        let capturedIDs = selection.selectedIDs
-
-        Task {
-            var urls: [URL] = []
-            for item in selectedItems {
-                if let fileURL = await ShelfStateViewModel.shared.resolveFileURLAsync(for: item) {
-                    urls.append(fileURL)
-                } else if case .link(let url) = item.kind {
-                    urls.append(url)
-                }
-            }
-
-            if !urls.isEmpty {
-                await MainActor.run {
-                    // Only update if selection hasn't changed since we started resolving
-                    if selection.selectedIDs == capturedIDs {
-                        quickLookService.updateSelection(urls: urls)
-                    }
-                }
-            }
-        }
     }
 
     var panel: some View {
@@ -129,18 +60,8 @@ struct ShelfView: View {
                 style: StrokeStyle(lineWidth: 3, lineCap: .round, dash: [10])
             )
             .overlay {
-                ZStack {
-                    // Covers the ring between the padded content and the panel
-                    // edge, plus the whole panel when the shelf is empty. The
-                    // marquee overlay only spans the ScrollView's content.
-                    ShelfBackgroundClickCatcher {
-                        guard !selection.isDragging, !selection.isMarqueeSelecting else { return }
-                        selection.clear()
-                    }
-
-                    content
-                        .padding()
-                }
+                content
+                    .padding()
             }
             .transaction { transaction in
                 transaction.animation = vm.animation
@@ -168,39 +89,11 @@ struct ShelfView: View {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 70), spacing: spacing)], spacing: spacing) {
                         ForEach(tvm.items) { item in
                             ShelfItemView(item: item)
-                                .environmentObject(quickLookService)
                         }
-                    }
-                    // Stretch the content to at least the viewport so the
-                    // marquee overlay also covers the gap right of the last item
-                    // — that gap is where a rubber-band selection usually starts.
-                    .frame(
-                        minWidth: viewportSize.width,
-                        minHeight: viewportSize.height,
-                        alignment: .leading
-                    )
-                    .overlay {
-                        ShelfMarqueeSelectionView(
-                            onBackgroundClick: {
-                                guard !selection.isDragging else { return }
-                                selection.clear()
-                            },
-                            onActiveChange: { active in
-                                vm.setAutoCloseSuppression(active, token: autoCloseToken)
-                            }
-                        )
                     }
                 }
                 .padding(-spacing)
                 .scrollIndicators(.never)
-                // Measures the ScrollView itself (the viewport), not its
-                // content, so this only fires when the panel resizes.
-                .background(
-                    GeometryReader { proxy in
-                        Color.clear.preference(key: ShelfViewportSizeKey.self, value: proxy.size)
-                    }
-                )
-                .onPreferenceChange(ShelfViewportSizeKey.self) { viewportSize = $0 }
                 .onDrop(of: [.fileURL, .url, .utf8PlainText, .plainText, .data], isTargeted: $vm.dragDetectorTargeting) { providers in
                     handleDrop(providers: providers)
                 }

@@ -30,13 +30,27 @@ final class ShelfStateViewModel: ObservableObject {
     @Published private(set) var items: [ShelfItem] = [] {
         didSet {
             ShelfPersistenceService.shared.save(items)
-            ShelfSelectionModel.shared.reconcileSelection(with: items)
         }
     }
 
     @Published var isLoading: Bool = false
 
     var isEmpty: Bool { items.isEmpty }
+
+    // MARK: - Drag-out state
+
+    /// True while an `NSDraggingSession` is carrying shelf items out of the
+    /// shelf. `ContentView.shouldPreventAutoClose` reads it so the hover-exit
+    /// timer cannot close the notch mid-drag and tear down the drag source.
+    private(set) var isDraggingOutItem: Bool = false
+
+    func beginDraggingOutItem() {
+        isDraggingOutItem = true
+    }
+
+    func endDraggingOutItem() {
+        isDraggingOutItem = false
+    }
 
     // Queue for deferred bookmark updates to avoid publishing during view updates
     private var pendingBookmarkUpdates: [ShelfItem.ID: (bookmark: Data, path: String?, source: Data)] = [:]
@@ -90,8 +104,7 @@ final class ShelfStateViewModel: ObservableObject {
     /// off the main actor, so a resolve that started before a rename can finish
     /// *after* `updateBookmark` recorded the new bookmark and path; without the
     /// check it would put the pre-rename path back, and `resolvedFileURL` prefers
-    /// `cachedPath` — so drag-out and the context menu would target the old
-    /// location.
+    /// `cachedPath` — so drag-out would target the old location.
     func applyCachedPaths(_ paths: [ShelfItem.ID: String], resolvedFrom sources: [ShelfItem.ID: Data]) {
         guard !paths.isEmpty else { return }
         var updated = items
@@ -142,11 +155,11 @@ final class ShelfStateViewModel: ObservableObject {
     /// Pass `resolvedFrom` when `bookmark` is the *refreshed form of an older
     /// bookmark* obtained off the main actor: the write is then skipped unless the
     /// item still holds that older bookmark, so a resolve that began before a
-    /// rename cannot put the pre-rename bookmark and path back. Omit it for
-    /// authoritative writes — the rename flow has already moved the file on disk,
-    /// and its data is by definition the freshest, so discarding that write
-    /// because something else refreshed the bookmark while the save panel was
-    /// open would lose the rename instead of protecting it.
+    /// move elsewhere cannot put the pre-move bookmark and path back. Omit it
+    /// for authoritative writes — the caller has already moved the file on
+    /// disk, and its data is by definition the freshest, so discarding that
+    /// write because something else refreshed the bookmark meanwhile would
+    /// lose the move instead of protecting it.
     func updateBookmark(for item: ShelfItem, bookmark: Data, path: String? = nil, resolvedFrom source: Data? = nil) {
         guard let idx = items.firstIndex(where: { $0.id == item.id }) else { return }
         guard case .file(let current) = items[idx].kind else { return }
