@@ -20,7 +20,6 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import AtollExtensionKit
 import SwiftUI
 import Defaults
 import AppKit
@@ -30,31 +29,22 @@ struct TabModel: Identifiable {
     let label: String
     let icon: String
     let view: NotchViews
-    let experienceID: String?
     let accentColor: Color?
 
-    init(label: String, icon: String, view: NotchViews, experienceID: String? = nil, accentColor: Color? = nil) {
-        self.id = experienceID.map { "extension-\($0)" } ?? "system-\(view)-\(label)"
+    init(label: String, icon: String, view: NotchViews, accentColor: Color? = nil) {
+        self.id = "system-\(view)-\(label)"
         self.label = label
         self.icon = icon
         self.view = view
-        self.experienceID = experienceID
         self.accentColor = accentColor
     }
 }
 
 struct TabSelectionView: View {
     @ObservedObject var coordinator = DynamicIslandViewCoordinator.shared
-    @ObservedObject private var extensionNotchExperienceManager = ExtensionNotchExperienceManager.shared
     @StateObject private var quickShareService = QuickShareService.shared
     @Default(.quickShareProvider) private var quickShareProvider
     @State private var showQuickSharePopover = false
-    @Default(.enableTimerFeature) var enableTimerFeature
-    @Default(.timerDisplayMode) var timerDisplayMode
-    @Default(.enableThirdPartyExtensions) private var enableThirdPartyExtensions
-    @Default(.enableExtensionNotchExperiences) private var enableExtensionNotchExperiences
-    @Default(.enableExtensionNotchTabs) private var enableExtensionNotchTabs
-    @Default(.showCalendar) private var showCalendar
     @Default(.showMirror) private var showMirror
     @Default(.showStandardMediaControls) private var showStandardMediaControls
     @Default(.enableMinimalisticUI) private var enableMinimalisticUI
@@ -64,40 +54,19 @@ struct TabSelectionView: View {
         var tabsArray: [TabModel] = []
 
         if Defaults[.dynamicShelf] {
-            tabsArray.append(TabModel(label: "Shelf", icon: "tray.fill", view: .shelf))
+            tabsArray.append(TabModel(label: "暂存", icon: "tray.fill", view: .shelf))
         }
 
         // 简约模式：只保留暂存架 + 剪贴板。
         if Defaults[.enableMinimalisticUI] {
             if Defaults[.enableClipboardManager] && Defaults[.clipboardDisplayMode] == .separateTab {
-                tabsArray.append(TabModel(label: "Clipboard", icon: "doc.on.clipboard", view: .clipboard))
+                tabsArray.append(TabModel(label: "剪贴板", icon: "doc.on.clipboard", view: .clipboard))
             }
             return tabsArray
         }
-        
-        if enableTimerFeature && timerDisplayMode == .tab {
-            tabsArray.append(TabModel(label: "Timer", icon: "timer", view: .timer))
-        }
-
 
         if Defaults[.enableClipboardManager] && Defaults[.clipboardDisplayMode] == .separateTab {
-            tabsArray.append(TabModel(label: "Clipboard", icon: "doc.on.clipboard", view: .clipboard))
-        }
-        if extensionTabsEnabled {
-            for payload in extensionTabPayloads {
-                guard let tab = payload.descriptor.tab else { continue }
-                let accent = payload.descriptor.accentColor.swiftUIColor
-                let iconName = tab.iconSymbolName ?? "puzzlepiece.extension"
-                tabsArray.append(
-                    TabModel(
-                        label: tab.title,
-                        icon: iconName,
-                        view: .extensionExperience,
-                        experienceID: payload.descriptor.id,
-                        accentColor: accent
-                    )
-                )
-            }
+            tabsArray.append(TabModel(label: "剪贴板", icon: "doc.on.clipboard", view: .clipboard))
         }
         return tabsArray
     }
@@ -109,9 +78,6 @@ struct TabSelectionView: View {
 
                 // Render the tab button
                 TabButton(label: tab.label, icon: tab.icon, selected: isSelected) {
-                    if tab.view == .extensionExperience {
-                        coordinator.selectedExtensionExperienceID = tab.experienceID
-                    }
                     // 方向必须按"看得见的标签顺序"算：内部 tabOrder 和实际
                     // 渲染顺序不同（中间有被关掉的模块），用它判断会左右颠倒。
                     let oldIndex = tabs.firstIndex(where: { $0.view == coordinator.currentView }) ?? 0
@@ -143,26 +109,14 @@ struct TabSelectionView: View {
         }
     }
 
-    private var extensionTabsEnabled: Bool {
-        enableThirdPartyExtensions && enableExtensionNotchExperiences && enableExtensionNotchTabs
-    }
-
-    private var extensionTabPayloads: [ExtensionNotchExperiencePayload] {
-        extensionNotchExperienceManager.activeExperiences.filter { $0.descriptor.tab != nil }
-    }
-
     private var homeTabVisible: Bool {
         if enableMinimalisticUI {
             return true
         }
-        return showStandardMediaControls || showCalendar || showMirror
+        return showStandardMediaControls || showMirror
     }
 
     private func isSelected(_ tab: TabModel) -> Bool {
-        if tab.view == .extensionExperience {
-            return coordinator.currentView == .extensionExperience
-                && coordinator.selectedExtensionExperienceID == tab.experienceID
-        }
         return coordinator.currentView == tab.view
     }
 
@@ -172,11 +126,6 @@ struct TabSelectionView: View {
             return
         }
         guard let first = tabs.first else { return }
-        if first.view == .extensionExperience {
-            coordinator.selectedExtensionExperienceID = first.experienceID
-        } else {
-            coordinator.selectedExtensionExperienceID = nil
-        }
         coordinator.currentView = first.view
     }
 }

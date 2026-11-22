@@ -81,7 +81,7 @@ jobs:
           fi
 
           xcodebuild build \
-            -project DynamicIsland.xcodeproj \
+            -project Z-island.xcodeproj \
             -scheme DynamicIsland \
             -destination "platform=macOS" \
             -resultBundlePath BuildResults.xcresult \

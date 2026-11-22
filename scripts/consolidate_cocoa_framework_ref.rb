@@ -5,7 +5,7 @@ require 'xcodeproj'
 # (DEVELOPER_DIR/MacOSX*.sdk) reference that breaks portability across Xcode/SDK
 # versions. Idempotent: re-running once consolidated is a no-op.
 
-project_path = './DynamicIsland.xcodeproj'
+project_path = './Z-island.xcodeproj'
 project = Xcodeproj::Project.open(project_path)
 
 cocoa_refs = project.files.select { |f| f.display_name == 'Cocoa.framework' }

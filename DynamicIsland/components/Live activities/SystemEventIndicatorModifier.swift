@@ -65,12 +65,6 @@ struct SystemEventIndicatorModifier: View {
                         .contentTransition(.symbolEffect)
                         .frame(width: 20, height: 15)
                         .foregroundStyle(.white)
-                case .mic:
-                    Image(systemName: "mic")
-                        .symbolVariant(value > 0 ? .none : .slash)
-                        .contentTransition(.interpolate)
-                        .frame(width: 20, height: 15)
-                        .foregroundStyle(.white)
                 case .bluetoothAudio:
                     if value < 0, let mode = AirPodsListeningMode.fromHUDSymbol(icon) {
                         AirPodsListeningModeSymbol(mode: mode)
@@ -87,12 +81,6 @@ struct SystemEventIndicatorModifier: View {
                     EmptyView()
             }
             switch eventType {
-            case .mic:
-                Text(value > 0 ? "Mic unmuted" : "Mic muted")
-                    .foregroundStyle(.gray)
-                    .lineLimit(1)
-                    .allowsTightening(true)
-                    .contentTransition(.numericText())
             case .volume:
                 VolumeProgressSection(value: $value, showPercentages: showProgressPercentages)
             case .brightness:

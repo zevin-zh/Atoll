@@ -72,9 +72,8 @@ public enum NotchState {
 
 public enum NotchViews {
     case shelf
-    case timer
     case clipboard
-    case extensionExperience}
+}
 
 enum SettingsEnum {
     case general
@@ -165,22 +164,6 @@ enum LockScreenGlassCustomizationMode: String, CaseIterable, Defaults.Serializab
                 return String(localized: "Standard")
             case .customLiquid:
                 return String(localized: "Custom Liquid")
-        }
-    }
-}
-
-enum LockScreenTimerSurfaceMode: String, CaseIterable, Defaults.Serializable, Identifiable {
-    case classic = "Classic"
-    case glass = "Glass"
-
-    var id: String { rawValue }
-    
-    var localizedName: String {
-        switch self {
-        case .classic:
-            return String(localized: "Classic")
-        case .glass:
-            return String(localized: "Glass")
         }
     }
 }
@@ -309,22 +292,6 @@ enum LockScreenWeatherAirQualityScale: String, CaseIterable, Defaults.Serializab
     }
 }
 
-enum LockScreenReminderChipStyle: String, CaseIterable, Defaults.Serializable, Identifiable {
-    case eventColor = "Event color"
-    case monochrome = "White"
-
-    var id: String { rawValue }
-    
-    var localizedName: String {
-            switch self {
-            case .eventColor:
-                return String(localized: "Event color")
-            case .monochrome:
-                return String(localized: "White")
-            }
-        }
-}
-
 /// Glyph contrast for lock-screen widgets sitting on the wallpaper.
 /// Dark = light glyphs (default). Light = dark glyphs for bright wallpapers.
 enum LockScreenWidgetAppearance: String, CaseIterable, Defaults.Serializable, Identifiable {
@@ -344,18 +311,4 @@ enum LockScreenWidgetAppearance: String, CaseIterable, Defaults.Serializable, Id
 
     /// When true, widgets use light (white) glyphs.
     var usesLightGlyphs: Bool { self == .dark }
-}
-
-enum TimerInputStyle: String, CaseIterable, Defaults.Serializable, Identifiable {
-    case ruler = "Ruler"
-    case manual = "Manual"
-    
-    var id: String { rawValue }
-    
-    var displayName: String {
-        switch self {
-        case .ruler: return String(localized: "Ruler")
-        case .manual: return String(localized: "Manual")
-        }
-    }
 }

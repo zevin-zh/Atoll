@@ -1,36 +1,31 @@
 import AppKit
 
-/// 菜单栏图标：直接用 app 图标本身（缩小后保留配色），与应用图标一致。
+/// 菜单栏图标：与 app 图标同源的 18pt 版本。
+/// 由 `scripts/generate_app_icon.swift` 按小尺寸单独重绘（不是把 1024 主图缩小），
+/// 生成到 Assets.xcassets/MenuBarIcon.imageset。
 enum MenuBarGlyph {
     static let image: NSImage = {
+        // 资产目录里的专用小图：18pt（1x/2x）
+        if let glyph = NSImage(named: "MenuBarIcon") {
+            glyph.size = NSSize(width: 18, height: 18)
+            return glyph
+        }
+
+        // 兜底：没有资产时退回到 app 图标本身，按目标尺寸重绘
         let size = NSSize(width: 18, height: 18)
+        let source = Bundle.main.url(forResource: "AppIcon", withExtension: "icns")
+            .flatMap { NSImage(contentsOf: $0) }
+            ?? NSImage(named: NSImage.applicationIconName)
+            ?? NSRunningApplication.current.icon
 
-        // 优先读 bundle 里的 app 图标，取不到就退回系统 AppIcon 名称。
-        var source: NSImage? = {
-            if let url = Bundle.main.url(forResource: "AppIcon", withExtension: "icns") {
-                return NSImage(contentsOf: url)
-            }
-            return NSImage(named: NSImage.applicationIconName)
-                ?? NSImage(named: "AppIcon")
-        }()
-
-        if source == nil {
-            source = NSRunningApplication.current.icon
-        }
-
-        guard let icon = source else {
-            return NSImage(size: size)
-        }
+        guard let icon = source else { return NSImage(size: size) }
 
         let output = NSImage(size: size)
         output.lockFocus()
         NSGraphicsContext.current?.imageInterpolation = .high
-        icon.draw(
-            in: NSRect(origin: .zero, size: size),
-            from: NSRect(origin: .zero, size: icon.size),
-            operation: .copy,
-            fraction: 1.0
-        )
+        icon.draw(in: NSRect(origin: .zero, size: size),
+                  from: NSRect(origin: .zero, size: icon.size),
+                  operation: .copy, fraction: 1.0)
         output.unlockFocus()
         return output
     }()

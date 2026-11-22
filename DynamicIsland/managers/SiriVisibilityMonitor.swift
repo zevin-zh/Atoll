@@ -79,14 +79,6 @@ final class SiriVisibilityMonitor: ObservableObject {
         }
         self.isInLowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
 
-        // Observe plugged in state via BatteryActivityManager
-        BatteryActivityManager.shared.onPowerSourceChange = { [weak self] pluggedIn in
-            Task { @MainActor in
-                self?.isPluggedIn = pluggedIn
-                self?.updateMonitoringState()
-            }
-        }
-        
         // Observe responsiveness mode preference
         Defaults.publisher(.siriResponsivenessMode)
             .receive(on: RunLoop.main)

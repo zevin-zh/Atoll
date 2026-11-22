@@ -25,18 +25,10 @@ enum SneakContentType: Equatable {
     case volume
     case backlight
     case music
-    case mic
     case battery
-    case download
-    case timer
-    case reminder
-    case recording
-    case doNotDisturb
     case bluetoothAudio
-    case privacy
     case lockScreen
     case capsLock
-    case extensionLiveActivity(bundleID: String, activityID: String)
 }
 
 extension SneakContentType {
@@ -46,34 +38,17 @@ extension SneakContentType {
              (.volume, .volume),
              (.backlight, .backlight),
              (.music, .music),
-             (.mic, .mic),
              (.battery, .battery),
-             (.download, .download),
-             (.timer, .timer),
-             (.reminder, .reminder),
-             (.recording, .recording),
-             (.doNotDisturb, .doNotDisturb),
              (.bluetoothAudio, .bluetoothAudio),
-             (.privacy, .privacy),
              (.lockScreen, .lockScreen),
              (.capsLock, .capsLock):
             return true
-        case let (.extensionLiveActivity(lb, la), .extensionLiveActivity(rb, ra)):
-            return lb == rb && la == ra
         default:
             return false
         }
     }
 }
 
-extension SneakContentType {
-    var isExtensionPayload: Bool {
-        if case .extensionLiveActivity = self {
-            return true
-        }
-        return false
-    }
-}
 
 struct sneakPeek {
     var show: Bool = false
@@ -94,12 +69,13 @@ struct ExpandedItem {
     var autoHideDuration: TimeInterval? = nil
 }
 
+@MainActor
 class DynamicIslandViewCoordinator: ObservableObject {
     static let shared = DynamicIslandViewCoordinator()
     private var cancellables = Set<AnyCancellable>()
     private var hoverOpenSuppressedUntil: Date = .distantPast
     
-    private static let tabOrder: [NotchViews] = [.shelf, .timer, .clipboard, .extensionExperience]
+    private static let tabOrder: [NotchViews] = [.shelf, .clipboard]
     
     /// Direction of the most recent tab switch (true = forward/right, false = backward/left)
     @Published var tabSwitchForward: Bool = true
@@ -120,15 +96,10 @@ class DynamicIslandViewCoordinator: ObservableObject {
         }
     }
     
-    @Published var selectedExtensionExperienceID: String?
     
     
     @AppStorage("firstLaunch") var firstLaunch: Bool = true
     @AppStorage("musicLiveActivityEnabled") var musicLiveActivityEnabled: Bool = true
-    @AppStorage("timerLiveActivityEnabled") var timerLiveActivityEnabled: Bool = true
-
-    @Default(.enableTimerFeature) private var enableTimerFeature
-    @Default(.timerDisplayMode) private var timerDisplayMode
     
     @AppStorage("alwaysShowTabs") var alwaysShowTabs: Bool = true {
         didSet {
@@ -161,24 +132,9 @@ class DynamicIslandViewCoordinator: ObservableObject {
     @Published var selectedScreen: String = NSScreen.main?.localizedName ?? "Unknown"
 
     @Published var optionKeyPressed: Bool = true
-    private let extensionNotchExperienceManager = ExtensionNotchExperienceManager.shared
     
     private init() {
         selectedScreen = preferredScreen
-        Defaults.publisher(.timerDisplayMode)
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] change in
-                self?.handleTimerDisplayModeChange(change.newValue)
-            }
-            .store(in: &cancellables)
-
-        Defaults.publisher(.enableTimerFeature)
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] change in
-                self?.handleTimerFeatureToggle(change.newValue)
-            }
-            .store(in: &cancellables)
-
         Defaults.publisher(.enableMinimalisticUI)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] change in
@@ -186,44 +142,11 @@ class DynamicIslandViewCoordinator: ObservableObject {
             }
             .store(in: &cancellables)
 
-        extensionNotchExperienceManager.$activeExperiences
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] experiences in
-                self?.handleExtensionExperienceSnapshot(experiences)
-            }
-            .store(in: &cancellables)
-
-        Defaults.publisher(.enableThirdPartyExtensions)
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.handleExtensionFeatureToggle()
-            }
-            .store(in: &cancellables)
-
-        Defaults.publisher(.enableExtensionNotchExperiences)
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.handleExtensionFeatureToggle()
-            }
-            .store(in: &cancellables)
-
-        Defaults.publisher(.enableExtensionNotchTabs)
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.handleExtensionFeatureToggle()
-            }
-            .store(in: &cancellables)
-
-        handleExtensionExperienceSnapshot(extensionNotchExperienceManager.activeExperiences)
-
         // Observe all tab-affecting settings to enforce minimum notch width
         Publishers.MergeMany(
             Defaults.publisher(.showStandardMediaControls).map { _ in () }.eraseToAnyPublisher(),
-            Defaults.publisher(.showCalendar).map { _ in () }.eraseToAnyPublisher(),
             Defaults.publisher(.showMirror).map { _ in () }.eraseToAnyPublisher(),
             Defaults.publisher(.dynamicShelf).map { _ in () }.eraseToAnyPublisher(),
-            Defaults.publisher(.enableTimerFeature).map { _ in () }.eraseToAnyPublisher(),
-            Defaults.publisher(.timerDisplayMode).map { _ in () }.eraseToAnyPublisher(),
             Defaults.publisher(.enableClipboardManager).map { _ in () }.eraseToAnyPublisher(),
             Defaults.publisher(.clipboardDisplayMode).map { _ in () }.eraseToAnyPublisher(),
             Defaults.publisher(.enableMinimalisticUI).map { _ in () }.eraseToAnyPublisher()
@@ -246,20 +169,6 @@ class DynamicIslandViewCoordinator: ObservableObject {
         hoverOpenSuppressedUntil = Date().addingTimeInterval(max(0, duration))
     }
 
-    private func handleTimerDisplayModeChange(_ mode: TimerDisplayMode) {
-        guard mode == .popover, currentView == .timer else { return }
-        withAnimation(.smooth) {
-            currentView = .shelf
-        }
-    }
-
-    private func handleTimerFeatureToggle(_ isEnabled: Bool) {
-        guard !isEnabled, currentView == .timer else { return }
-        withAnimation(.smooth) {
-            currentView = .shelf
-        }
-    }
-
     private func handleMinimalisticModeChange(_ isEnabled: Bool) {
         guard isEnabled else { return }
         withAnimation(.smooth) {
@@ -267,44 +176,6 @@ class DynamicIslandViewCoordinator: ObservableObject {
         }
     }
 
-    private func handleExtensionExperienceSnapshot(_ experiences: [ExtensionNotchExperiencePayload]) {
-        guard extensionTabsAllowed else {
-            selectedExtensionExperienceID = nil
-            resetExtensionViewIfNeeded()
-            return
-        }
-
-        let tabCapablePayloads = experiences.filter { $0.descriptor.tab != nil }
-        guard !tabCapablePayloads.isEmpty else {
-            selectedExtensionExperienceID = nil
-            resetExtensionViewIfNeeded()
-            return
-        }
-
-        if let currentID = selectedExtensionExperienceID,
-           tabCapablePayloads.contains(where: { $0.descriptor.id == currentID }) {
-            return
-        }
-
-        selectedExtensionExperienceID = tabCapablePayloads.first?.descriptor.id
-    }
-
-    private func handleExtensionFeatureToggle() {
-        handleExtensionExperienceSnapshot(extensionNotchExperienceManager.activeExperiences)
-    }
-
-    private func resetExtensionViewIfNeeded() {
-        guard currentView == .extensionExperience else { return }
-        withAnimation(.smooth) {
-            currentView = .shelf
-        }
-    }
-
-    private var extensionTabsAllowed: Bool {
-        Defaults[.enableThirdPartyExtensions]
-        && Defaults[.enableExtensionNotchExperiences]
-        && Defaults[.enableExtensionNotchTabs]
-    }
     
     func toggleSneakPeek(
         status: Bool,
@@ -318,29 +189,10 @@ class DynamicIslandViewCoordinator: ObservableObject {
         styleOverride: SneakPeekStyle? = nil,
         onScreen targetScreen: NSScreen? = nil
     ) {
-        let resolvedDuration: TimeInterval
-        switch type {
-        case .timer:
-            resolvedDuration = 10
-        case .reminder:
-            resolvedDuration = Defaults[.reminderSneakPeekDuration]
-        case .extensionLiveActivity:
-            resolvedDuration = duration
-        default:
-            resolvedDuration = duration
-        }
-        sneakPeekDuration = resolvedDuration
-        let bypassedTypes: [SneakContentType] = [.music, .timer, .reminder, .bluetoothAudio]
+        sneakPeekDuration = duration
+        let bypassedTypes: [SneakContentType] = [.music, .bluetoothAudio]
         
-        // Check if it's an extension type
-        let isExtensionType: Bool
-        if case .extensionLiveActivity = type {
-            isExtensionType = true
-        } else {
-            isExtensionType = false
-        }
-        
-        if !isExtensionType && !bypassedTypes.contains(type) && !Defaults[.enableSystemHUD] {
+        if !bypassedTypes.contains(type) && !Defaults[.enableSystemHUD] {
             return
         }
         DispatchQueue.main.async {
@@ -418,14 +270,11 @@ class DynamicIslandViewCoordinator: ObservableObject {
         didSet {
             if expandingView.show {
                 expandingViewTask?.cancel()
-                // Only auto-hide for battery, not for downloads (DownloadManager handles that)
-                if expandingView.type != .download {
-                    let duration = expandingView.autoHideDuration ?? 3
-                    expandingViewTask = Task { [weak self] in
-                        try? await Task.sleep(for: .seconds(duration))
-                        guard let self = self, !Task.isCancelled else { return }
-                        self.toggleExpandingView(status: false, type: .battery)
-                    }
+                let duration = expandingView.autoHideDuration ?? 3
+                expandingViewTask = Task { [weak self] in
+                    try? await Task.sleep(for: .seconds(duration))
+                    guard let self = self, !Task.isCancelled else { return }
+                    self.toggleExpandingView(status: false, type: .battery)
                 }
             } else {
                 expandingViewTask?.cancel()

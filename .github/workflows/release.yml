@@ -25,7 +25,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  PROJECT: DynamicIsland.xcodeproj
+  PROJECT: Z-island.xcodeproj
   SCHEME: DynamicIsland
   APP_NAME: Atoll
   TEAM_ID: 9Y64TRM77N

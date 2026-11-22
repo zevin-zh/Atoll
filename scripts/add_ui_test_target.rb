@@ -1,6 +1,6 @@
 require 'xcodeproj'
 
-project_path = './DynamicIsland.xcodeproj'
+project_path = './Z-island.xcodeproj'
 project = Xcodeproj::Project.open(project_path)
 
 if project.targets.any? { |t| t.name == 'DynamicIslandUITests' }

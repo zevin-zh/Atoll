@@ -23,7 +23,6 @@ import SwiftUI
 @MainActor
 class DynamicIslandViewModel: NSObject, ObservableObject {
     @ObservedObject var coordinator = DynamicIslandViewCoordinator.shared
-    @ObservedObject var detector = FullscreenMediaDetector.shared
 
     let animationLibrary: DynamicIslandAnimations = .init()
     let animation: Animation?
@@ -43,10 +42,8 @@ class DynamicIslandViewModel: NSObject, ObservableObject {
     var onViewTeardown: (() -> Void)?
     
     @Published var hideOnClosed: Bool = true
-    @Published var isHoveringCalendar: Bool = false
     @Published var isBatteryPopoverActive: Bool = false
     @Published var isClipboardPopoverActive: Bool = false
-    @Published var isReminderPopoverActive: Bool = false
     /// Whether any output picker popover is open.
     ///
     /// Four separate views can present one of these -- the media output and
@@ -73,7 +70,6 @@ class DynamicIslandViewModel: NSObject, ObservableObject {
             isMediaOutputPopoverActive = isAnyActive
         }
     }
-    @Published var isTimerPopoverActive: Bool = false
     @Published var shouldRecheckHover: Bool = false
     @Published var isScrollGestureActive: Bool = false
     private var scrollGestureSuppressionTokens: Set<UUID> = []
@@ -164,62 +160,6 @@ class DynamicIslandViewModel: NSObject, ObservableObject {
             .assign(to: \.anyDropZoneTargeting, on: self)
             .store(in: &cancellables)
         
-        setupDetectorObserver()
-
-        ReminderLiveActivityManager.shared.$activeWindowReminders
-            .removeDuplicates()
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                guard let self else { return }
-                let updatedTarget = self.calculateDynamicNotchSize()
-                guard self.notchState == .open else { return }
-                guard self.notchSize != updatedTarget else { return }
-                withAnimation(.smooth) {
-                    self.notchSize = updatedTarget
-                }
-                if let delegate = AppDelegate.shared {
-                    delegate.ensureWindowSize(
-                        addShadowPadding(to: updatedTarget, isMinimalistic: Defaults[.enableMinimalisticUI]),
-                        animated: true,
-                        force: false
-                    )
-                }
-            }
-            .store(in: &cancellables)
-
-        // Observe settings + lyrics changes to dynamically resize the notch
-        let enableLyricsPublisher = Defaults.publisher(.enableLyrics).map { $0.newValue }
-
-        enableLyricsPublisher
-            .combineLatest(MusicManager.shared.$currentLyrics)
-            .removeDuplicates { $0.0 == $1.0 && $0.1 == $1.1 }
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                guard let self else { return }
-                guard Defaults[.enableMinimalisticUI] else { return }
-                let updatedTarget = self.calculateDynamicNotchSize()
-                guard self.notchState == .open else { return }
-                guard self.notchSize != updatedTarget else { return }
-                withAnimation(.smooth) {
-                    self.notchSize = updatedTarget
-                }
-                if let delegate = AppDelegate.shared {
-                    delegate.ensureWindowSize(
-                        addShadowPadding(to: updatedTarget, isMinimalistic: Defaults[.enableMinimalisticUI]),
-                        animated: true,
-                        force: false
-                    )
-                }
-            }
-            .store(in: &cancellables)
-
-        TimerManager.shared.$activeSource
-            .combineLatest(TimerManager.shared.$isTimerActive)
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _, _ in
-                self?.handleMinimalisticTimerHeightChange()
-            }
-            .store(in: &cancellables)
 
         Defaults.publisher(.openNotchWidth, options: [])
             .map { $0.newValue }
@@ -240,87 +180,6 @@ class DynamicIslandViewModel: NSObject, ObservableObject {
                         animated: true,
                         force: false
                     )
-                }
-            }
-            .store(in: &cancellables)
-
-        Publishers.MergeMany(
-            Defaults.publisher(.enableLyrics, options: []).map { _ in () }.eraseToAnyPublisher(),
-            Defaults.publisher(.showCalendar, options: []).map { _ in () }.eraseToAnyPublisher(),
-            Defaults.publisher(.showStandardMediaControls, options: []).map { _ in () }.eraseToAnyPublisher(),
-            Defaults.publisher(.autoHideInactiveNotchMediaPlayer, options: []).map { _ in () }.eraseToAnyPublisher(),
-            Defaults.publisher(.showMirror, options: []).map { _ in () }.eraseToAnyPublisher(),
-            Defaults.publisher(.lyricsPanelWidth, options: []).map { _ in () }.eraseToAnyPublisher(),
-            Defaults.publisher(.lyricsPanelOffset, options: []).map { _ in () }.eraseToAnyPublisher(),
-            MusicManager.shared.$isPlaying.map { _ in () }.eraseToAnyPublisher(),
-            MusicManager.shared.$songTitle.map { _ in () }.eraseToAnyPublisher(),
-            MusicManager.shared.$artistName.map { _ in () }.eraseToAnyPublisher(),
-            WebcamManager.shared.$cameraAvailable.map { _ in () }.eraseToAnyPublisher()
-        )
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.updateSideLyricsNotchSizeIfNeeded()
-            }
-            .store(in: &cancellables)
-    }
-
-    private func updateSideLyricsNotchSizeIfNeeded() {
-        guard notchState == .open, !Defaults[.enableMinimalisticUI] else { return }
-
-        let updatedTarget = calculateDynamicNotchSize()
-        guard notchSize != updatedTarget else { return }
-        withAnimation(.smooth) {
-            notchSize = updatedTarget
-        }
-        AppDelegate.shared?.ensureWindowSize(
-            addShadowPadding(to: updatedTarget, isMinimalistic: false),
-            animated: true,
-            force: false
-        )
-    }
-
-    private func handleMinimalisticTimerHeightChange() {
-        guard Defaults[.enableMinimalisticUI] else { return }
-        guard notchState == .open else { return }
-        let updatedTarget = calculateDynamicNotchSize()
-        guard notchSize != updatedTarget else { return }
-        withAnimation(.smooth) {
-            notchSize = updatedTarget
-        }
-        if let delegate = AppDelegate.shared {
-            delegate.ensureWindowSize(
-                addShadowPadding(to: updatedTarget, isMinimalistic: Defaults[.enableMinimalisticUI]),
-                animated: true,
-                force: false
-            )
-        }
-    }
-    
-    private func setupDetectorObserver() {
-        // 1) Publisher for the user’s fullscreen detection setting
-        let enabledPublisher = Defaults
-            .publisher(.enableFullscreenMediaDetection)
-            .map(\.newValue)
-
-        // 2) For each non‑nil screen name, map to a Bool publisher for that screen's status
-        let statusPublisher = $screen
-            .compactMap { $0 }
-            .removeDuplicates()
-            .map { screenName in
-                self.detector.$fullscreenStatus
-                    .map { $0[screenName] ?? false }
-                    .removeDuplicates()
-            }
-            .switchToLatest()
-
-        // 3) Combine enabled & status, animate only on changes
-        Publishers.CombineLatest(statusPublisher, enabledPublisher)
-            .map { status, enabled in enabled && status }
-            .removeDuplicates()
-            .receive(on: RunLoop.main)
-            .sink { [weak self] shouldHide in
-                withAnimation(.smooth) {
-                    self?.hideOnClosed = shouldHide
                 }
             }
             .store(in: &cancellables)
@@ -367,8 +226,6 @@ class DynamicIslandViewModel: NSObject, ObservableObject {
         notchSize = targetSize
         notchState = .open
 
-        // Force music information update when notch is opened
-        MusicManager.shared.forceUpdate()
         focusClipboardTabIfNeeded()
     }
     

@@ -55,7 +55,7 @@ struct DynamicNotchApp: App {
             Divider()
             ShowMenuBarIconToggle()
             Divider()
-            Button("Restart Z-island") {
+            Button("重启 Z-island") {
                 guard let bundleIdentifier = Bundle.main.bundleIdentifier else { return }
 
                 let workspace = NSWorkspace.shared
@@ -71,12 +71,12 @@ struct DynamicNotchApp: App {
 
                 NSApplication.shared.terminate(self)
             }
-            Button("Quit Z-island", role: .destructive) {
+            Button("退出 Z-island", role: .destructive) {
                 NSApplication.shared.terminate(self)
             }
             .keyboardShortcut(KeyEquivalent("Q"), modifiers: .command)
         } label: {
-            // 自定义菜单栏图标：刘海岛剪影（template image，跟随菜单栏明暗）
+            // 菜单栏图标：app 图标的 18pt 专用版本（MenuBarIcon，小尺寸单独绘制）
             Image(nsImage: MenuBarGlyph.image)
         }
     }
@@ -106,7 +106,7 @@ struct LaunchAtLoginToggle: View {
                 isLoginItemEnabled = SMAppService.mainApp.status == .enabled
             }
         )) {
-            Label("Launch at Login", systemImage: "poweron")
+            Label("开机自启", systemImage: "poweron")
         }
         .onAppear {
             // Re-sync with the system every time the menu opens, in case the
@@ -126,7 +126,7 @@ struct GrantAllPermissionsButton: View {
         Button {
             PermissionsRequester.grantAll()
         } label: {
-            Label("Grant All Permissions", systemImage: "checkmark.shield")
+            Label("一键授权全部权限", systemImage: "checkmark.shield")
         }
     }
 }
@@ -142,7 +142,7 @@ struct ShowMenuBarIconToggle: View {
 
     var body: some View {
         Toggle(isOn: $showMenuBarIcon) {
-            Label("Show Menu Bar Icon", systemImage: "menubar.rectangle")
+            Label("显示菜单栏图标", systemImage: "menubar.rectangle")
         }
     }
 }
@@ -167,35 +167,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let vm: DynamicIslandViewModel = .init()
     @ObservedObject var coordinator = DynamicIslandViewCoordinator.shared
     var timer: Timer?
-    let calendarManager = CalendarManager.shared
     let webcamManager = WebcamManager.shared
-    let dndManager = DoNotDisturbManager.shared  // NEW: DND detection
     let bluetoothAudioManager = BluetoothAudioManager.shared  // NEW: Bluetooth audio detection
-    let networkConnectivityManager = NetworkConnectivityManager.shared
     let idleAnimationManager = IdleAnimationManager.shared  // NEW: Custom idle animations
-    let downloadManager = DownloadManager.shared  // NEW: browser downloads detection
-    let lockScreenPanelManager = LockScreenPanelManager.shared  // NEW: Lock screen music panel
-    let mediaControlsStateCoordinator = MediaControlsStateCoordinator.shared
-    let systemTimerBridge = SystemTimerBridge.shared
-    let extensionXPCServiceHost = ExtensionXPCServiceHost.shared
-    let extensionRPCServer = ExtensionRPCServer.shared
     var closeNotchWorkItem: DispatchWorkItem?
     private var previousScreens: [NSScreen]?
-    private var onboardingWindowController: NSWindowController?
     private var cancellables = Set<AnyCancellable>()
     private var windowsHiddenForLock = false
     private var optionalShortcutHandlersRegistered = false
-    private weak var focusWithoutDevToolsMenuItem: NSMenuItem?
-    private weak var focusUseDevToolsMenuItem: NSMenuItem?
     
     // Debouncing mechanism for window size updates
     private var windowSizeUpdateWorkItem: DispatchWorkItem?
 
-//    let calendarManager = CalendarManager.shared
-//    let webcamManager = WebcamManager.shared
+////    let webcamManager = WebcamManager.shared
 //    var closeNotchWorkItem: DispatchWorkItem?
 //    private var previousScreens: [NSScreen]?
-//    private var onboardingWindowController: NSWindowController?
 //    private var cancellables = Set<AnyCancellable>()
 //    
 //    // Debouncing mechanism for window size updates
@@ -248,16 +234,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
 
     func applicationWillTerminate(_ notification: Notification) {
-        let userInfo: [String: Any] = [
-            AtollDistributedNotifications.UserInfoKey.sourcePID: NSNumber(value: ProcessInfo.processInfo.processIdentifier)
-        ]
-        DistributedNotificationCenter.default().postNotificationName(
-            AtollDistributedNotifications.didBecomeIdle,
-            object: nil,
-            userInfo: userInfo,
-            deliverImmediately: true
-        )
-
         // Guarantee the native OSD is usable after we exit: if we were
         // suppressing it, OSDUIHelper is SIGSTOP-frozen and the async restore in
         // enableSystemHUD() would not finish before the process dies. Resume it
@@ -267,9 +243,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Cancel any pending window size updates
         windowSizeUpdateWorkItem?.cancel()
         NotificationCenter.default.removeObserver(self)
-        extensionXPCServiceHost.stop()
-        extensionRPCServer.stop()
-        networkConnectivityManager.stopMonitoring()    }
+    }
     
     @objc func onScreenLocked(_: Notification) {
         print("Screen locked")
@@ -449,23 +423,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func calculateRequiredNotchSize() -> CGSize {
-        if NetworkConnectivityHUDMetrics.isPresented(
-            state: networkConnectivityManager.hudState,
-            notchState: vm.notchState,
-            hideOnClosed: vm.hideOnClosed,
-            isLocked: LockScreenManager.shared.isLocked
-        ),
-           let connectivitySize = NetworkConnectivityHUDMetrics.size(
-               for: networkConnectivityManager.hudState,
-               closedNotchSize: vm.closedNotchSize,
-               effectiveClosedNotchHeight: vm.effectiveClosedNotchHeight
-           ) {
-            return addShadowPadding(
-                to: connectivitySize,
-                isMinimalistic: Defaults[.enableMinimalisticUI]
-            )
-        }
-
         // Check if inline sneak peek is showing and notch is closed
         let airPodsListeningModeSneakActive = vm.notchState == .closed &&
                                       coordinator.sneakPeek.show &&
@@ -476,7 +433,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                                       Defaults[.enableSneakPeek] &&
                                       (
                                           coordinator.expandingView.show &&
-                                          (coordinator.expandingView.type == .music || coordinator.expandingView.type == .timer) &&
+                                          coordinator.expandingView.type == .music &&
                                           Defaults[.sneakPeekStyles] == .inline ||
                                           airPodsListeningModeSneakActive
                                       )
@@ -488,58 +445,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let inlineSneakPeekWidth: CGFloat = 460
             return CGSize(width: inlineSneakPeekWidth, height: vm.effectiveClosedNotchHeight)
         }
-
-        if let recordingHUDSize = recordingHUDLayoutForSizing().size(
-            closedNotchSize: vm.closedNotchSize,
-            effectiveClosedNotchHeight: vm.effectiveClosedNotchHeight
-        ) {
-            return addShadowPadding(to: recordingHUDSize, isMinimalistic: Defaults[.enableMinimalisticUI])
-        }
-
-        // Check for battery HUD expansion
-        if vm.notchState == .closed && 
-           coordinator.expandingView.show && 
-           coordinator.expandingView.type == .battery &&
-           Defaults[.showPowerStatusNotifications] {
-            
-            let batteryModel = BatteryStatusViewModel.shared
-            if let kind = batteryModel.activeTemporaryHUDKind {
-                let closedNotchHeight = vm.effectiveClosedNotchHeight
-                let closedNotchWidth = vm.closedNotchSize.width
-                
-                let style: BatteryNotificationStyle = {
-                    switch kind {
-                    case .charging: return .compact
-                    case .lowBattery: return Defaults[.lowBatteryHUDStyle]
-                    case .fullBattery: return Defaults[.fullBatteryHUDStyle]
-                    }
-                }()
-                
-                var width = closedNotchWidth
-                var height = closedNotchHeight
-                
-                switch (kind, style) {
-                case (.charging, _), (.lowBattery, .compact), (.fullBattery, .compact):
-                    width += 180
-                case (.lowBattery, .standard):
-                    width += 100
-                    height += 75
-                case (.fullBattery, .standard):
-                    width += 80
-                    height += 70
-                }
-                
-                return addShadowPadding(to: CGSize(width: width, height: height), isMinimalistic: Defaults[.enableMinimalisticUI])
-            }
-        }
-        
         // Use minimalistic or normal size based on settings
         var baseSize = Defaults[.enableMinimalisticUI] ? minimalisticOpenNotchSize(isDynamicIslandMode: shouldUseDynamicIslandMode(for: vm.screen)) : openNotchSize
-        
-        // Use a consistent height for different view types
-        if coordinator.currentView == .timer {
-            baseSize.height = 250 // Extra space for timer presets
-        }
         
         let result = addShadowPadding(
             to: baseSize,
@@ -548,41 +455,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         return result
     }
-
-    private func recordingHUDLayoutForSizing() -> RecordingHUDLayout {
-        makeRecordingHUDLayout(
-            notchState: vm.notchState,
-            screenRecordingDetectionEnabled: Defaults[.enableScreenRecordingDetection],
-            showRecordingIndicator: Defaults[.showRecordingIndicator],
-            hideOnClosed: vm.hideOnClosed,
-            isRecording: ScreenRecordingManager.shared.isRecording,
-            closedMusicPairingEligible: closedMusicPairingEligibleForSizing(),
-            recordingControlMode: Defaults[.recordingControlMode],
-            canStopFromHUD: ScreenRecordingManager.shared.shouldShowStopControlsInHUD,
-            enableMinimalisticUI: Defaults[.enableMinimalisticUI],
-            recordingHoverStyle: Defaults[.recordingHoverStyle],
-            suppressHoverExpansion: ScreenRecordingManager.shared.isScreenSharingAppActive,
-            expanded: true
-        )
-    }
-
-    private func closedMusicPairingEligibleForSizing() -> Bool {
-        let musicManager = MusicManager.shared
-        let hasMusicMetadata = !musicManager.songTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            || !musicManager.artistName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        let hasActiveMusicSnapshot = musicManager.isPlaying || (!musicManager.isPlayerIdle && hasMusicMetadata)
-
-        return isClosedMusicPairingEligible(
-            notchState: vm.notchState,
-            hasActiveMusicSnapshot: hasActiveMusicSnapshot,
-            musicLiveActivityEnabled: coordinator.musicLiveActivityEnabled,
-            closedMusicContentEnabled: Defaults[.enableMinimalisticUI] || Defaults[.showStandardMediaControls],
-            hideOnClosed: vm.hideOnClosed,
-            isLocked: LockScreenManager.shared.isLocked,
-            isDeferredAfterUnlock: LockScreenManager.shared.shouldDelayPostUnlockMusicHUD
-        )
-    }
-
     /// Adds Dynamic Island shadow/top insets on non-notch screens, or top bleed on physical-notch screens.
     private func adjustedSizeForScreen(_ baseSize: CGSize, screen: NSScreen) -> CGSize {
         var adjusted = baseSize
@@ -657,31 +529,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func shouldAnimateResize(for newSize: CGSize) -> Bool {
-        if Defaults[.enableMinimalisticUI] && !ReminderLiveActivityManager.shared.activeWindowReminders.isEmpty {
-            return false
-        }
         return true
     }
     
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let userInfo: [String: Any] = [
-            AtollDistributedNotifications.UserInfoKey.sourcePID: NSNumber(value: ProcessInfo.processInfo.processIdentifier)
-        ]
-        DistributedNotificationCenter.default().postNotificationName(
-            AtollDistributedNotifications.didBecomeActive,
-            object: nil,
-            userInfo: userInfo,
-            deliverImmediately: true
-        )
-
-        LockScreenLiveActivityWindowManager.shared.configure(viewModel: vm)
         LockScreenManager.shared.configure(viewModel: vm)
-        extensionXPCServiceHost.start()
-        extensionRPCServer.start()
         
         // Migrate legacy progress bar settings
         Defaults.Keys.migrateProgressBarStyle()
-        Defaults.Keys.migrateMusicControlSlots()
         Defaults.Keys.migrateCapsLockTintMode()
         Defaults.Keys.migrateClipboardShortcutToV()
         
@@ -691,13 +546,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         applySelectedAppIcon()
         installTopMenuItemsIfNeeded()
 
-        Defaults.publisher(.focusMonitoringMode, options: [])
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.updateFocusMenuState()
-            }
-            .store(in: &cancellables)
-        
         // Setup SystemHUD Manager
         SystemHUDManager.shared.setup(coordinator: coordinator)
         
@@ -705,21 +553,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // stored history back.
         ClipboardManager.purgeStoredHistoryIfPersistenceDisabled()
 
-        // Setup ScreenRecording Manager
-        if Defaults[.enableScreenRecordingDetection] && !AppRuntimeEnvironment.isUITesting {
-            ScreenRecordingManager.shared.startMonitoring()
-        }
-
-        // Setup Do Not Disturb Manager
-        if Defaults[.enableDoNotDisturbDetection] && !AppRuntimeEnvironment.isUITesting {
-            dndManager.startMonitoring()
-        }
-
-        // Setup Privacy Indicator Manager (camera/mic; skipped under UI testing).
-        if !AppRuntimeEnvironment.isUITesting {
-            PrivacyIndicatorManager.shared.startMonitoring()
-            networkConnectivityManager.startMonitoring()
-        }
         
         
         // Observe tab changes - use immediate resize to keep the notch pinned
@@ -731,59 +564,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }.store(in: &cancellables)
 
-        networkConnectivityManager.$hudState
-            .removeDuplicates()
-            .sink { [weak self] _ in
-                // @Published emits before assigning the new state, so calculate
-                // the target dimensions on the next main-run-loop turn.
-                DispatchQueue.main.async {
-                    self?.updateWindowSizeIfNeeded()
-                }
-            }
-            .store(in: &cancellables)
-
-        MusicManager.shared.$isAdvertisement
-            .removeDuplicates()
-            .sink { [weak self] _ in
-                // @Published emits before assignment; recalculate after the
-                // ad flag has changed so minimalistic mode drops/adds the
-                // lyrics height from both the SwiftUI surface and NSWindow.
-                DispatchQueue.main.async {
-                    self?.updateWindowSizeIfNeeded()
-                }
-            }
-            .store(in: &cancellables)
 
         Defaults.publisher(.openNotchWidth, options: []).sink { [weak self] _ in
             self?.debouncedUpdateWindowSize()
         }.store(in: &cancellables)
-
-        ReminderLiveActivityManager.shared.$activeWindowReminders
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.debouncedUpdateWindowSize()
-            }
-            .store(in: &cancellables)
-
-        TimerManager.shared.$activeSource
-            .combineLatest(TimerManager.shared.$isTimerActive)
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.debouncedUpdateWindowSize()
-            }
-            .store(in: &cancellables)
 
         Defaults.publisher(.enableShortcuts, options: []).sink { [weak self] change in
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 KeyboardShortcuts.isEnabled = change.newValue
                 self.updateFeatureShortcutAvailability()
-            }
-        }.store(in: &cancellables)
-
-        Defaults.publisher(.enableTimerFeature, options: []).sink { [weak self] _ in
-            Task { @MainActor [weak self] in
-                self?.updateFeatureShortcutAvailability()
             }
         }.store(in: &cancellables)
 
@@ -809,25 +599,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.updateWindowSizeIfNeeded()
         }.store(in: &cancellables)
         
-        // Observe screen recording settings changes
-        Defaults.publisher(.enableScreenRecordingDetection, options: []).sink { _ in
-            if Defaults[.enableScreenRecordingDetection] {
-                ScreenRecordingManager.shared.startMonitoring()
-            } else {
-                ScreenRecordingManager.shared.stopMonitoring()
-            }
-        }.store(in: &cancellables)
-        
-        Defaults.publisher(.enableDoNotDisturbDetection, options: []).sink { [weak self] _ in
-            guard let self else { return }
-
-            if Defaults[.enableDoNotDisturbDetection] {
-                self.dndManager.startMonitoring()
-            } else {
-                self.dndManager.stopMonitoring()
-            }
-        }.store(in: &cancellables)
-
         // Note: Polling setting removed - now uses event-driven private API detection only
 
         NotificationCenter.default.addObserver(
@@ -956,79 +727,28 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             adjustWindowPosition(changeAlpha: true)
         }
         
-        // Skip onboarding window and welcome sound under UI testing.
-        if coordinator.firstLaunch && !AppRuntimeEnvironment.isUITesting {
-            DispatchQueue.main.async {
-                self.showOnboardingWindow()
-            }
-            playWelcomeSound()
-        }
-        
         previousScreens = NSScreen.screens
-
-        // Skip weather under UI testing: prepareLocationAccess prompts for Location.
-        if Defaults[.enableLockScreenWeatherWidget] && !AppRuntimeEnvironment.isUITesting {
-            LockScreenWeatherManager.shared.prepareLocationAccess()
-            Task { @MainActor in
-                await LockScreenWeatherManager.shared.refresh(force: true)
-            }
-        }
-
-        // Warm up the lock screen timer widget manager so it can observe timer/default
-        // changes immediately instead of waiting for the first lock event.
-        let timerWidgetManager = LockScreenTimerWidgetManager.shared
-        timerWidgetManager.handleLockStateChange(isLocked: LockScreenManager.shared.currentLockStatus)
 
     }
 
     private func installTopMenuItemsIfNeeded() {
         guard let mainMenu = NSApp.mainMenu else { return }
-        if mainMenu.items.contains(where: { $0.identifier?.rawValue == "Atoll.Focus.Menu" }) {
-            updateFocusMenuState()
-            return
-        }
 
         let insertionIndex = preferredMenuInsertionIndex(in: mainMenu)
 
-        let focusMenuItem = NSMenuItem(title: String(localized: "Focus"), action: nil, keyEquivalent: "")
-        focusMenuItem.identifier = NSUserInterfaceItemIdentifier("Atoll.Focus.Menu")
-        let focusSubmenu = NSMenu(title: "Focus")
-
-        let withoutDevTools = NSMenuItem(
-            title: "Use without DevTools",
-            action: #selector(selectFocusWithoutDevTools),
-            keyEquivalent: ""
-        )
-        withoutDevTools.target = self
-
-        let useDevTools = NSMenuItem(
-            title: "Use DevTools",
-            action: #selector(selectFocusUseDevTools),
-            keyEquivalent: ""
-        )
-        useDevTools.target = self
-
-        focusSubmenu.addItem(withoutDevTools)
-        focusSubmenu.addItem(useDevTools)
-        focusMenuItem.submenu = focusSubmenu
-        mainMenu.insertItem(focusMenuItem, at: insertionIndex)
-
-        focusWithoutDevToolsMenuItem = withoutDevTools
-        focusUseDevToolsMenuItem = useDevTools
-
-        let accessibilityMenuItem = NSMenuItem(title: String(localized: "Accessibility"), action: nil, keyEquivalent: "")
+        let accessibilityMenuItem = NSMenuItem(title: "辅助功能", action: nil, keyEquivalent: "")
         accessibilityMenuItem.identifier = NSUserInterfaceItemIdentifier("Atoll.Accessibility.Menu")
-        let accessibilitySubmenu = NSMenu(title: "Accessibility")
+        let accessibilitySubmenu = NSMenu(title: "辅助功能")
 
         let requestAccessibility = NSMenuItem(
-            title: "Request Accessibility Access",
+            title: "申请辅助功能权限",
             action: #selector(requestAccessibilityAccess),
             keyEquivalent: ""
         )
         requestAccessibility.target = self
 
         let openAccessibility = NSMenuItem(
-            title: "Open Accessibility Settings",
+            title: "打开辅助功能设置",
             action: #selector(openAccessibilitySettings),
             keyEquivalent: ""
         )
@@ -1037,28 +757,28 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         accessibilitySubmenu.addItem(requestAccessibility)
         accessibilitySubmenu.addItem(openAccessibility)
         accessibilityMenuItem.submenu = accessibilitySubmenu
-        mainMenu.insertItem(accessibilityMenuItem, at: insertionIndex + 1)
+        mainMenu.insertItem(accessibilityMenuItem, at: insertionIndex)
 
-        let permissionsMenuItem = NSMenuItem(title: String(localized: "Permissions"), action: nil, keyEquivalent: "")
+        let permissionsMenuItem = NSMenuItem(title: "权限", action: nil, keyEquivalent: "")
         permissionsMenuItem.identifier = NSUserInterfaceItemIdentifier("Atoll.Permissions.Menu")
-        let permissionsSubmenu = NSMenu(title: "Permissions")
+        let permissionsSubmenu = NSMenu(title: "权限")
 
         let requestFullDisk = NSMenuItem(
-            title: "Request Full Disk Access",
+            title: "申请完全磁盘访问权限",
             action: #selector(requestFullDiskAccess),
             keyEquivalent: ""
         )
         requestFullDisk.target = self
 
         let openFullDisk = NSMenuItem(
-            title: "Open Full Disk Access Settings",
+            title: "打开完全磁盘访问权限设置",
             action: #selector(openFullDiskAccessSettings),
             keyEquivalent: ""
         )
         openFullDisk.target = self
 
         let openDevTools = NSMenuItem(
-            title: "Open Developer Tools Settings",
+            title: "打开开发者工具设置",
             action: #selector(openDeveloperToolsSettingsFromMenu),
             keyEquivalent: ""
         )
@@ -1069,23 +789,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         permissionsSubmenu.addItem(NSMenuItem.separator())
         permissionsSubmenu.addItem(openDevTools)
         permissionsMenuItem.submenu = permissionsSubmenu
-        mainMenu.insertItem(permissionsMenuItem, at: insertionIndex + 2)
+        mainMenu.insertItem(permissionsMenuItem, at: insertionIndex + 1)
 
-        let toolsMenuItem = NSMenuItem(title: String(localized: "Tools"), action: nil, keyEquivalent: "")
+        let toolsMenuItem = NSMenuItem(title: "工具", action: nil, keyEquivalent: "")
         toolsMenuItem.identifier = NSUserInterfaceItemIdentifier("Atoll.Tools.Menu")
-        let toolsSubmenu = NSMenu(title: "Tools")
+        let toolsSubmenu = NSMenu(title: "工具")
 
-        let loggingLevelItem = NSMenuItem(title: String(localized: "Logging Level"), action: nil, keyEquivalent: "")
+        let loggingLevelItem = NSMenuItem(title: "日志级别", action: nil, keyEquivalent: "")
         loggingLevelItem.identifier = NSUserInterfaceItemIdentifier("Atoll.Tools.LoggingLevel")
-        let loggingLevelSubmenu = NSMenu(title: "Logging Level")
+        let loggingLevelSubmenu = NSMenu(title: "日志级别")
         
         // Dispatched by tag, so the titles are safe to localize.
         let levels: [(String, LogLevel)] = [
-            (String(localized: "No Logging"), .none),
-            (String(localized: "Error"), .error),
-            (String(localized: "Warning"), .warning),
-            (String(localized: "Info"), .info),
-            (String(localized: "Debug"), .debug)
+            ("不记录", .none),
+            ("错误", .error),
+            ("警告", .warning),
+            ("信息", .info),
+            ("调试", .debug)
         ]
         
         for (title, level) in levels {
@@ -1100,14 +820,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         toolsSubmenu.addItem(NSMenuItem.separator())
         
-        let exportLogsItem = NSMenuItem(title: String(localized: "Export Logs"), action: #selector(exportLogs), keyEquivalent: "")
+        let exportLogsItem = NSMenuItem(title: "导出日志", action: #selector(exportLogs), keyEquivalent: "")
         exportLogsItem.target = self
         toolsSubmenu.addItem(exportLogsItem)
 
         toolsMenuItem.submenu = toolsSubmenu
-        mainMenu.insertItem(toolsMenuItem, at: insertionIndex + 3)
+        mainMenu.insertItem(toolsMenuItem, at: insertionIndex + 2)
 
-        updateFocusMenuState()
     }
 
     private func preferredMenuInsertionIndex(in mainMenu: NSMenu) -> Int {
@@ -1118,22 +837,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return index
         }
         return max(mainMenu.numberOfItems, 0)
-    }
-
-    private func updateFocusMenuState() {
-        let mode = Defaults[.focusMonitoringMode]
-        focusWithoutDevToolsMenuItem?.state = mode == .withoutDevTools ? .on : .off
-        focusUseDevToolsMenuItem?.state = mode == .useDevTools ? .on : .off
-    }
-
-    @objc private func selectFocusWithoutDevTools() {
-        Defaults[.focusMonitoringMode] = .withoutDevTools
-        updateFocusMenuState()
-    }
-
-    @objc private func selectFocusUseDevTools() {
-        Defaults[.focusMonitoringMode] = .useDevTools
-        updateFocusMenuState()
     }
 
     @objc private func requestAccessibilityAccess() {
@@ -1263,11 +966,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard !optionalShortcutHandlersRegistered else { return }
         optionalShortcutHandlersRegistered = true
 
-        KeyboardShortcuts.onKeyDown(for: .startDemoTimer) {
-            guard Defaults[.enableShortcuts], Defaults[.enableTimerFeature] else { return }
-            TimerManager.shared.startDemoTimer(duration: 300)
-        }
-
         KeyboardShortcuts.onKeyDown(for: .clipboardHistoryPanel) { [weak self] in
             guard let self else { return }
             guard Defaults[.enableShortcuts], Defaults[.enableClipboardManager] else { return }
@@ -1334,7 +1032,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @MainActor
     private func updateFeatureShortcutAvailability() {
-        updateShortcut(.startDemoTimer, isEnabled: Defaults[.enableShortcuts] && Defaults[.enableTimerFeature])
         updateShortcut(.clipboardHistoryPanel, isEnabled: Defaults[.enableShortcuts] && Defaults[.enableClipboardManager])
     }
 
@@ -1345,11 +1042,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             KeyboardShortcuts.disable(name)
         }
-    }
-    
-    func playWelcomeSound() {
-        let audioPlayer = AudioPlayer()
-        audioPlayer.play(fileName: "dynamic", fileExtension: "m4a")
     }
     
     func deviceHasNotch() -> Bool {
@@ -1467,39 +1159,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     
     
-    private func showOnboardingWindow() {
-        if onboardingWindowController == nil {
-            let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 400, height: 600),
-                styleMask: [.titled, .fullSizeContentView],
-                backing: .buffered,
-                defer: false
-            )
-            window.center()
-            window.title = "Onboarding"
-            window.titlebarAppearsTransparent = true
-            window.titleVisibility = .hidden
-            window.contentView = NSHostingView(rootView: OnboardingView(
-                onFinish: {
-                    window.orderOut(nil)
-                    NSApp.setActivationPolicy(.accessory)
-                    window.close()
-                    NSApp.deactivate()
-                }
-            ))
-            window.isRestorable = false
-            window.identifier = NSUserInterfaceItemIdentifier("OnboardingWindow")
-
-            ScreenCaptureVisibilityManager.shared.register(window, scope: .panelsOnly)
-
-            onboardingWindowController = NSWindowController(window: window)
-        }
-
-        NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
-        onboardingWindowController?.window?.makeKeyAndOrderFront(nil)
-        onboardingWindowController?.window?.orderFrontRegardless()
-    }
 }
 
 extension Notification.Name {
@@ -1519,101 +1178,6 @@ extension CGRect: @retroactive Hashable {
 
     public static func == (lhs: CGRect, rhs: CGRect) -> Bool {
         return lhs.origin == rhs.origin && lhs.size == rhs.size
-    }
-}
-
-@MainActor
-final class MediaControlsStateCoordinator {
-    static let shared = MediaControlsStateCoordinator()
-
-    private var cancellables = Set<AnyCancellable>()
-
-    private init() {
-        let masterPublisher = Defaults.publisher(.showStandardMediaControls)
-        let minimalisticPublisher = Defaults.publisher(.enableMinimalisticUI)
-
-        Publishers.CombineLatest(masterPublisher, minimalisticPublisher)
-            .receive(on: RunLoop.main)
-            .sink { [weak self] masterChange, minimalisticChange in
-                self?.handleStateChange(
-                    showStandard: masterChange.newValue,
-                    minimalistic: minimalisticChange.newValue
-                )
-            }
-            .store(in: &cancellables)
-    }
-
-    private func handleStateChange(showStandard: Bool, minimalistic: Bool) {
-        if !showStandard && !minimalistic {
-            cacheAndDisableMusicLiveActivity()
-        } else {
-            restoreMusicLiveActivity(clearCache: showStandard)
-        }
-
-        if showStandard {
-            restoreLockScreenPanelIfNeeded()
-            restoreMusicControlWindowIfNeeded()
-        } else {
-            cacheAndDisableLockScreenPanel()
-            cacheAndDisableMusicControlWindow()
-        }
-    }
-
-    private func cacheAndDisableMusicLiveActivity() {
-        if Defaults[.cachedMusicLiveActivityPreference] == nil {
-            Defaults[.cachedMusicLiveActivityPreference] = DynamicIslandViewCoordinator.shared.musicLiveActivityEnabled
-        }
-
-        if DynamicIslandViewCoordinator.shared.musicLiveActivityEnabled {
-            DynamicIslandViewCoordinator.shared.musicLiveActivityEnabled = false
-        }
-    }
-
-    private func restoreMusicLiveActivity(clearCache: Bool) {
-        guard let cached = Defaults[.cachedMusicLiveActivityPreference] else { return }
-
-        if DynamicIslandViewCoordinator.shared.musicLiveActivityEnabled != cached {
-            DynamicIslandViewCoordinator.shared.musicLiveActivityEnabled = cached
-        }
-
-        if clearCache {
-            Defaults[.cachedMusicLiveActivityPreference] = nil
-        }
-    }
-
-    private func cacheAndDisableLockScreenPanel() {
-        if Defaults[.cachedLockScreenMediaWidgetPreference] == nil {
-            Defaults[.cachedLockScreenMediaWidgetPreference] = Defaults[.enableLockScreenMediaWidget]
-        }
-
-        if Defaults[.enableLockScreenMediaWidget] {
-            Defaults[.enableLockScreenMediaWidget] = false
-            LockScreenPanelManager.shared.hidePanel()
-        }
-    }
-
-    private func restoreLockScreenPanelIfNeeded() {
-        guard let cached = Defaults[.cachedLockScreenMediaWidgetPreference] else { return }
-        Defaults[.enableLockScreenMediaWidget] = cached
-        Defaults[.cachedLockScreenMediaWidgetPreference] = nil
-    }
-
-    private func cacheAndDisableMusicControlWindow() {
-        if Defaults[.cachedMusicControlWindowPreference] == nil {
-            Defaults[.cachedMusicControlWindowPreference] = Defaults[.musicControlWindowEnabled]
-        }
-
-        if Defaults[.musicControlWindowEnabled] {
-            Defaults[.musicControlWindowEnabled] = false
-        }
-
-        MusicControlWindowManager.shared.hide()
-    }
-
-    private func restoreMusicControlWindowIfNeeded() {
-        guard let cached = Defaults[.cachedMusicControlWindowPreference] else { return }
-        Defaults[.musicControlWindowEnabled] = cached
-        Defaults[.cachedMusicControlWindowPreference] = nil
     }
 }
 

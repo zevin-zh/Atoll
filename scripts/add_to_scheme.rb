@@ -1,6 +1,6 @@
 require 'xcodeproj'
 
-project_path = './DynamicIsland.xcodeproj'
+project_path = './Z-island.xcodeproj'
 scheme_path = Xcodeproj::XCScheme.shared_data_dir(project_path) + 'DynamicIsland.xcscheme'
 
 scheme = Xcodeproj::XCScheme.new(scheme_path)

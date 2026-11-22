@@ -27,50 +27,12 @@ import SwiftUI
 let downloadSneakSize: CGSize = .init(width: 65, height: 1)
 let batterySneakSize: CGSize = .init(width: 160, height: 1)
 
-/// Layout budgets applied to the home view only while the side lyrics panel is active
-enum SideLyricsLayout {
-    /// Room the standard player needs for its album art and five-button control row
-    static let minimumPlayerWidth: CGFloat = 380
-
-    /// Room the webcam mirror needs to stay usable next to the player
-    static let minimumMirrorWidth: CGFloat = 220
-
-    /// Spacing between the player, mirror, and lyrics panel columns
-    static let hStackSpacing: CGFloat = 20
-
-    /// Combined home-view and notch content insets surrounding those columns
-    static let combinedInset: CGFloat = 40
-}
-
-func sideLyricsRequiredNotchWidth() -> CGFloat {
-    guard Defaults[.enableLyrics],
-          !Defaults[.showCalendar],
-          !Defaults[.enableMinimalisticUI],
-          Defaults[.showStandardMediaControls],
-          (!Defaults[.autoHideInactiveNotchMediaPlayer] || MusicManager.shared.hasActiveSession)
-    else { return 0 }
-
-    let panelWidth = max(0, Defaults[.lyricsPanelWidth])
-    let offsetDistance = abs(Defaults[.lyricsPanelOffset])
-    let mirrorWidth = Defaults[.showMirror] && WebcamManager.shared.cameraAvailable
-        ? SideLyricsLayout.minimumMirrorWidth + SideLyricsLayout.hStackSpacing
-        : 0
-
-    // Include the home-view and notch content insets so the player receives
-    // the same usable width it had before the panel was added.
-    return SideLyricsLayout.minimumPlayerWidth
-        + panelWidth
-        + SideLyricsLayout.hStackSpacing
-        + offsetDistance
-        + mirrorWidth
-        + SideLyricsLayout.combinedInset
-}
 
 var openNotchSize: CGSize {
     let storedWidth = Defaults[.openNotchWidth]
     let minWidth = currentRecommendedMinimumNotchWidth()
     let maxWidth = maxAllowedNotchWidth()
-    let width = min(max(storedWidth, minWidth, sideLyricsRequiredNotchWidth()), maxWidth)
+    let width = min(max(storedWidth, minWidth), maxWidth)
     return .init(width: width, height: 200)
 }
 
@@ -102,17 +64,12 @@ func enabledStandardTabCount() -> Int {
     var count = 0
 
     // Home tab
-    if Defaults[.showStandardMediaControls] || Defaults[.showCalendar] || Defaults[.showMirror] {
+    if Defaults[.showStandardMediaControls] || Defaults[.showMirror] {
         count += 1
     }
 
     // Shelf tab
     if Defaults[.dynamicShelf] {
-        count += 1
-    }
-
-    // Timer tab (only in .tab display mode)
-    if Defaults[.enableTimerFeature] && Defaults[.timerDisplayMode] == .tab {
         count += 1
     }
 
@@ -151,11 +108,6 @@ func enforceMinimumNotchWidth() {
     }
 }
 private let minimalisticBaseOpenNotchSize: CGSize = .init(width: 420, height: 180)
-// 10pt top padding + 40pt lyrics content; keep in sync with MinimalisticMusicPlayerView.calculateDynamicHeight
-private let minimalisticLyricsExtraHeight: CGFloat = 50
-let minimalisticTimerCountdownTopPadding: CGFloat = 12
-let minimalisticTimerCountdownContentHeight: CGFloat = 82
-let minimalisticTimerCountdownBlockHeight: CGFloat = minimalisticTimerCountdownTopPadding + minimalisticTimerCountdownContentHeight
 /// Headroom the extension tabs may grow beyond the base open height.
 let notchAdditionalRowHeadroom: CGFloat = 132
 let notchShadowPaddingStandard: CGFloat = 18
@@ -169,21 +121,6 @@ func minimalisticOpenNotchSize(isDynamicIslandMode: Bool) -> CGSize {
         size.width = 340 // Reduced from 420 for a narrower pill
         size.height = 144 // Exact height of the minimalistic music player view
     }
-
-    if Defaults[.enableLyrics] && !MusicManager.shared.isAdvertisement {
-        size.height += minimalisticLyricsExtraHeight
-    }
-    
-    let reminderCount = ReminderLiveActivityManager.shared.activeWindowReminders.count
-    if reminderCount > 0 {
-        let reminderHeight = ReminderLiveActivityManager.additionalHeight(forRowCount: reminderCount)
-        size.height += reminderHeight
-    }
-
-    if DynamicIslandViewCoordinator.shared.timerLiveActivityEnabled && TimerManager.shared.isExternalTimerActive {
-        size.height += minimalisticTimerCountdownBlockHeight
-    }
-
     return size
 }
 let cornerRadiusInsets: (opened: (top: CGFloat, bottom: CGFloat), closed: (top: CGFloat, bottom: CGFloat)) = (opened: (top: 19, bottom: 24), closed: (top: 6, bottom: 14))

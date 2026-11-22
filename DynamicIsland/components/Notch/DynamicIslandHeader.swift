@@ -22,21 +22,12 @@ import SwiftUI
 struct DynamicIslandHeader: View {
     @EnvironmentObject var vm: DynamicIslandViewModel
     @EnvironmentObject var webcamManager: WebcamManager
-    @ObservedObject var batteryModel = BatteryStatusViewModel.shared
     @ObservedObject var coordinator = DynamicIslandViewCoordinator.shared
     @ObservedObject var clipboardManager = ClipboardManager.shared
     @ObservedObject var shelfState = ShelfStateViewModel.shared
-    @ObservedObject var timerManager = TimerManager.shared
-    @ObservedObject var doNotDisturbManager = DoNotDisturbManager.shared
     @State private var showClipboardPopover = false
-    @State private var showTimerPopover = false
-    @Default(.enableTimerFeature) var enableTimerFeature
-    @Default(.timerDisplayMode) var timerDisplayMode
     @Default(.showClipboardIcon) var showClipboardIcon
     @Default(.clipboardDisplayMode) var clipboardDisplayMode
-    @Default(.showBatteryIndicator) var showBatteryIndicator
-    @Default(.showBatteryPercentInside) var showBatteryPercentInside
-    @Default(.showMinimalisticBatteryIndicator) var showMinimalisticBatteryIndicator
     @Default(.enableMinimalisticUI) var enableMinimalisticUI
     
     /// Point size per symbol, so the row reads as one size.
@@ -50,7 +41,6 @@ struct DynamicIslandHeader: View {
         "web.camera": 14.5,
         "list.clipboard": 13,
         "eyedropper": 14.3,
-        "timer": 14.4,
         "gearshape": 14.2,
         // Not solved against measured ink the way the others were: the three
         // sliders stand slightly taller than `timer`, so this trims to match.
@@ -168,80 +158,8 @@ struct DynamicIslandHeader: View {
                             }
                         }
                     }
-                    
-                    if Defaults[.enableTimerFeature] && timerDisplayMode == .popover {
-                        Button(action: {
-                            withAnimation(.smooth) {
-                                showTimerPopover.toggle()
-                            }
-                        }) {
-                            Capsule()
-                                .fill(.black)
-                                .frame(width: 30, height: 30)
-                                .overlay {
-                                    headerGlyph("timer")
-                                }
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .popover(isPresented: $showTimerPopover, arrowEdge: .bottom) {
-                            TimerPopover()
-                        }
-                        .onChange(of: showTimerPopover) { isActive in
-                            vm.isTimerPopoverActive = isActive
-                            if !isActive {
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                    vm.shouldRecheckHover.toggle()
-                                }
-                            }
-                        }
-                    }
-                    // Screen Recording Indicator
-                    if Defaults[.enableScreenRecordingDetection] && Defaults[.showRecordingIndicator] && !shouldSuppressStatusIndicators {
-                        RecordingIndicator()
-                            .frame(width: 30, height: 30) // Same size as other header elements
-                    }
-
-                    if Defaults[.enableDoNotDisturbDetection]
-                        && Defaults[.showDoNotDisturbIndicator]
-                        && doNotDisturbManager.isDoNotDisturbActive
-                        && !shouldSuppressStatusIndicators {
-                        FocusIndicator()
-                            .frame(width: 30, height: 30)
-                            .transition(.opacity)
-                    }
                 }
 
-                if vm.notchState == .open && showBatteryIndicator {
-                    if enableMinimalisticUI {
-                        // In minimalistic notch mode, show the battery pill only when
-                        // showMinimalisticBatteryIndicator is enabled (and not DI mode).
-                        if !shouldUseDynamicIslandMode(for: vm.screen) && showMinimalisticBatteryIndicator {
-                            MinimalisticBatteryView(
-                                levelBattery: batteryModel.levelBattery,
-                                isPluggedIn: batteryModel.isPluggedIn,
-                                isCharging: batteryModel.isCharging,
-                                isInLowPowerMode: batteryModel.isInLowPowerMode,
-                                bodyWidth: 28,
-                                bodyHeight: 14,
-                                isForNotification: false,
-                                showPercentInside: showBatteryPercentInside
-                            )
-                            .padding(.trailing, 4)
-                            .transition(.opacity.combined(with: .scale(scale: 0.85)))
-                        }
-                    } else {
-                        DynamicIslandBatteryView(
-                            batteryWidth: 30,
-                            isCharging: batteryModel.isCharging,
-                            isInLowPowerMode: batteryModel.isInLowPowerMode,
-                            isPluggedIn: batteryModel.isPluggedIn,
-                            levelBattery: batteryModel.levelBattery,
-                            maxCapacity: batteryModel.maxCapacity,
-                            timeToFullCharge: batteryModel.timeToFullCharge,
-                            isForNotification: false
-                        )
-                    }
-                }
             }
             .font(.system(.headline, design: .rounded))
             .frame(maxWidth: .infinity, alignment: .trailing)
@@ -284,18 +202,6 @@ struct DynamicIslandHeader: View {
                 showClipboardPopover.toggle()
             }
         }
-        .onChange(of: enableTimerFeature) { _, newValue in
-            if !newValue {
-                showTimerPopover = false
-                vm.isTimerPopoverActive = false
-            }
-        }
-        .onChange(of: timerDisplayMode) { _, mode in
-            if mode == .tab {
-                showTimerPopover = false
-                vm.isTimerPopoverActive = false
-            }
-        }
     }
 }
 
@@ -303,7 +209,6 @@ private extension DynamicIslandHeader {
     var shouldSuppressStatusIndicators: Bool {
         Defaults[.enableClipboardManager]
             && Defaults[.showClipboardIcon]
-            && Defaults[.enableTimerFeature]
     }
 }
 
