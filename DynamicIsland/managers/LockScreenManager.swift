@@ -1,5 +1,6 @@
 /*
- * Atoll (DynamicIsland)
+ * Z-island
+ *
  * Copyright (C) 2024-2026 Atoll Contributors
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,229 +17,65 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import Foundation
-import Combine
 import AppKit
-import Defaults
-import SwiftUI
-import os
+import Combine
 
+/// 只回答一个问题：屏幕现在锁着没有。
+///
+/// 这个状态影响两件事，缺一件都会出问题：
+///
+/// 1. 锁屏时刘海不在屏幕上，我们自己的 HUD 不该再拦按键去画；
+/// 2. 解锁状态下会主动压制 macOS 自带的 OSD（否则一次音量出现两个指示器），
+///    而这个压制是全局单通道的 —— 锁屏时如果不把系统 OSD 让回去，
+///    调亮度、按键盘背光会完全没有提示。
+///
+/// 所以只需要锁 / 解锁两个通知，加一次启动时的兜底查询。
 @MainActor
-class LockScreenManager: ObservableObject {
+final class LockScreenManager: ObservableObject {
     static let shared = LockScreenManager()
-    
-    // MARK: - Coordinator
-    private let coordinator = DynamicIslandViewCoordinator.shared
-    private weak var viewModel: DynamicIslandViewModel?
-    
-    // MARK: - Published Properties
-    @Published var isLocked: Bool = false {
-        didSet { LockScreenManager.setLockedSnapshot(isLocked) }
-    }
 
-    /// Lock state readable off the main actor. The HUD dispatchers run on
-    /// whichever thread CoreAudio or the brightness watcher calls them from,
-    /// and only need a plain answer to "are we locked".
-    ///
-    /// Behind a lock rather than `nonisolated(unsafe)`: the writer is the main
-    /// actor, by way of `isLocked`'s `didSet`, and the readers are whatever
-    /// threads CoreAudio and the brightness watcher happen to use, so the
-    /// unsynchronised version was a data race that merely looked benign
-    /// because a Bool is one word wide.
-    nonisolated private static let lockedSnapshot = OSAllocatedUnfairLock(initialState: false)
+    /// 给非 MainActor 的调用点用的快照（按键回调不一定在主线程）。
+    nonisolated(unsafe) private static var cachedLocked = false
+    nonisolated static var isLockedSnapshot: Bool { cachedLocked }
 
-    nonisolated static var isLockedSnapshot: Bool {
-        lockedSnapshot.withLock { $0 }
-    }
+    @Published private(set) var isLocked: Bool
 
-    /// Records the lock state for off-main-actor readers.
-    nonisolated private static func setLockedSnapshot(_ locked: Bool) {
-        lockedSnapshot.withLock { $0 = locked }
-    }
-    @Published var shouldDelayPostUnlockMusicHUD: Bool = false
-    @Published var lastUpdated: Date = .distantPast
-    
-    // MARK: - Private Properties
-    private var lockStatePollTask: Task<Void, Never>?
-    
-    // MARK: - Helpers
-    
-    private func timestamp() -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm:ss.SSS"
-        return formatter.string(from: Date())
-    }
-    
-    // MARK: - Initialization
+    private var observers: [NSObjectProtocol] = []
+
     private init() {
-        setupObservers()
-        print("LockScreenManager: 🔒 Initialized")
-    }
-    
-    deinit {
-        DistributedNotificationCenter.default().removeObserver(self)
-        NSWorkspace.shared.notificationCenter.removeObserver(self)
-        lockStatePollTask?.cancel()
-    }
-    
-    // MARK: - Setup
-    
-    private func setupObservers() {
-        // Observe screen locked event
-        DistributedNotificationCenter.default().addObserver(
-            self,
-            selector: #selector(screenLocked),
-            name: .init("com.apple.screenIsLocked"),
-            object: nil
-        )
+        isLocked = Self.readSessionLockState()
+        Self.cachedLocked = isLocked
 
-        // Observe screen unlocked event
-        DistributedNotificationCenter.default().addObserver(
-            self,
-            selector: #selector(screenUnlocked),
-            name: .init("com.apple.screenIsUnlocked"),
-            object: nil
-        )
+        let center = DistributedNotificationCenter.default()
+        let events: [(String, Bool)] = [
+            ("com.apple.screenIsLocked", true),
+            ("com.apple.screenIsUnlocked", false),
+        ]
 
-        // Fallback: macOS sometimes delays `com.apple.screenIsUnlocked`, leaving
-        // lock-sensitive UI visible after the user-perceived unlock.
-        // The workspace session-active notification typically fires earlier; the
-        // guard at the top of `screenUnlocked` makes the call idempotent.
-        NSWorkspace.shared.notificationCenter.addObserver(
-            self,
-            selector: #selector(screenUnlocked),
-            name: NSWorkspace.sessionDidBecomeActiveNotification,
-            object: nil
-        )
-
-        print("LockScreenManager: ✅ Observers registered for lock/unlock events")
-    }
-    
-    // MARK: - Event Handlers
-    
-    @objc private func screenLocked() {
-        guard !isLocked else {
-            print("[\\(timestamp())] LockScreenManager: 🔁 Duplicate LOCK event ignored")
-            return
-        }
-        print("[\\(timestamp())] LockScreenManager: 🔒 Screen LOCKED event received")
-        Logger.log("LockScreenManager: Screen locked", category: .lifecycle)
-        LockScreenDisplayContextProvider.shared.refresh(reason: "screen-locked")
-        
-        // Update state SYNCHRONOUSLY without Task/await to avoid any delay
-        lastUpdated = Date()
-        shouldDelayPostUnlockMusicHUD = false
-        
-        // Set locked state immediately without animation wrapper
-        isLocked = true
-
-        viewModel?.closeForLockScreen()
-
-        if coordinator.expandingView.show {
-            let currentType = coordinator.expandingView.type
-            coordinator.toggleExpandingView(status: false, type: currentType)
-        }
-
-        if coordinator.sneakPeek.show {
-            coordinator.toggleSneakPeek(status: false, type: coordinator.sneakPeek.type)
-        }
-        
-        updateNativeHUDSuppression()
-        startLockStatePolling()
-
-        print("[\\(timestamp())] LockScreenManager: ✅ Lock screen activated")
-    }
-
-    @objc private func screenUnlocked() {
-        guard isLocked else {
-            print("[\\(timestamp())] LockScreenManager: 🔁 Unlock event ignored (already unlocked)")
-            return
-        }
-        print("[\\(timestamp())] LockScreenManager: 🔓 Screen UNLOCKED event received")
-        Logger.log("LockScreenManager: Screen unlocked", category: .lifecycle)
-        LockScreenDisplayContextProvider.shared.refresh(reason: "screen-unlocked")
-        lastUpdated = Date()
-        isLocked = false
-        updateNativeHUDSuppression()
-        stopLockStatePolling()
-        shouldDelayPostUnlockMusicHUD = false
-
-        print("[\\(self.timestamp())] LockScreenManager: ✅ Lock screen deactivated")
-    }
-    
-    // MARK: - Lock State Polling
-
-    // Defensive fallback against late/missed `com.apple.screenIsUnlocked` and
-    // `NSWorkspace.sessionDidBecomeActiveNotification` notifications, which
-    // macOS sometimes delivers well after the user-perceived unlock — leaving
-    // lock-sensitive UI visible for an extra moment. While we believe we are
-    // locked, poll the canonical session-lock state and fire `screenUnlocked()`
-    // the moment the OS flips. The handler's duplicate-event guard makes this
-    // safe to call alongside any later-arriving notification.
-    private static func isSessionScreenLocked() -> Bool {
-        guard let session = CGSessionCopyCurrentDictionary() as? [String: Any] else {
-            return false
-        }
-        return session["CGSSessionScreenIsLocked"] as? Bool ?? false
-    }
-
-    /// Starts the twice-a-second poll of the canonical session lock state.
-    ///
-    /// Runs only while this manager believes the Mac is locked, and fires
-    /// `screenUnlocked()` as soon as the OS reports the session unlocked.
-    private func startLockStatePolling() {
-        lockStatePollTask?.cancel()
-        lockStatePollTask = Task { [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(500))
-                if Task.isCancelled { return }
-                await MainActor.run {
-                    guard let self, self.isLocked else { return }
-                    if !Self.isSessionScreenLocked() {
-                        print("[\\(self.timestamp())] LockScreenManager: 🔓 Polling detected unlock ahead of notification")
-                        self.screenUnlocked()
-                        return
-                    }
+        for (name, locked) in events {
+            let token = center.addObserver(
+                forName: NSNotification.Name(name), object: nil, queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor in
+                    self?.apply(locked: locked)
                 }
             }
+            observers.append(token)
         }
     }
 
-    /// Cancels the lock state poll. Safe to call when no poll is running.
-    private func stopLockStatePolling() {
-        lockStatePollTask?.cancel()
-        lockStatePollTask = nil
+    /// 保留旧调用点（AppDelegate 启动时调用），状态由通知自行维护。
+    func configure(viewModel: DynamicIslandViewModel) {}
+
+    private func apply(locked: Bool) {
+        guard isLocked != locked else { return }
+        isLocked = locked
+        Self.cachedLocked = locked
     }
 
-    // MARK: - Idle State Management
-
-    /// Volume feedback on the lock screen comes from macOS, for as long as the
-    /// Mac is locked. Whether any of our own UI is up no longer changes that, so
-    /// this only has to run when the lock state itself changes.
-    func updateNativeHUDSuppression() {
-        // Acting only on a change matters -- handing the HUD over restarts
-        // OSDUIHelper -- but the record of what has been applied belongs with
-        // the code that applies it. Kept here, it was written before a callee
-        // that can decline the request, so a dropped request still counted as
-        // applied and no later one for the same state ever retried.
-        SystemHUDManager.shared.updateNativeHUDSuppressionForLockState(isLocked: isLocked)
-    }
-}
-
-// MARK: - Extensions
-
-extension LockScreenManager {
-    func configure(viewModel: DynamicIslandViewModel) {
-        self.viewModel = viewModel
-    }
-    
-    /// Get current lock status without async
-    var currentLockStatus: Bool {
-        return isLocked
-    }
-    
-    /// Check if monitoring is available (for settings UI)
-    var isMonitoringAvailable: Bool {
-        return true // Always available on macOS
+    /// 启动时 App 可能在锁屏状态下被拉起，通知不会补发，所以查一次当前会话。
+    private static func readSessionLockState() -> Bool {
+        guard let session = CGSessionCopyCurrentDictionary() as? [String: Any] else { return false }
+        return session["CGSSessionScreenIsLocked"] as? Bool ?? false
     }
 }
