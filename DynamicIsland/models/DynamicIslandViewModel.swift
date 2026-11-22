@@ -122,9 +122,6 @@ class DynamicIslandViewModel: NSObject, ObservableObject {
         }
     }
     
-    let webcamManager = WebcamManager.shared
-    @Published var isCameraExpanded: Bool = false
-    @Published var isRequestingAuthorization: Bool = false
 
     @Published var screen: String?
 
@@ -276,45 +273,4 @@ class DynamicIslandViewModel: NSObject, ObservableObject {
         }
     }
     
-    func toggleCameraPreview() {
-        if isRequestingAuthorization {
-            return
-        }
-
-        switch webcamManager.authorizationStatus {
-        case .authorized:
-            if webcamManager.isSessionRunning {
-                webcamManager.stopSession()
-                isCameraExpanded = false
-            } else if webcamManager.cameraAvailable {
-                webcamManager.startSession()
-                isCameraExpanded = true
-            }
-
-        case .denied, .restricted:
-            DispatchQueue.main.async {
-                NSApp.setActivationPolicy(.regular)
-                NSApp.activate(ignoringOtherApps: true)
-
-                let alert = NSAlert()
-                alert.messageText = String(localized: "Camera Access Required")
-                alert.informativeText = String(localized: "Please allow camera access in System Settings.")
-                alert.addButton(withTitle: String(localized: "OK"))
-                alert.runModal()
-
-                NSApp.setActivationPolicy(.accessory)
-                NSApp.deactivate()
-            }
-
-        case .notDetermined:
-            isRequestingAuthorization = true
-            webcamManager.checkAndRequestVideoAuthorization()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                self.isRequestingAuthorization = false
-            }
-
-        default:
-            break
-        }
-    }
 }

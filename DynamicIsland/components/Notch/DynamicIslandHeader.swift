@@ -21,7 +21,6 @@ import SwiftUI
 
 struct DynamicIslandHeader: View {
     @EnvironmentObject var vm: DynamicIslandViewModel
-    @EnvironmentObject var webcamManager: WebcamManager
     @ObservedObject var coordinator = DynamicIslandViewCoordinator.shared
     @ObservedObject var shelfState = ShelfStateViewModel.shared
     @Default(.enableMinimalisticUI) var enableMinimalisticUI
@@ -92,23 +91,6 @@ struct DynamicIslandHeader: View {
             // than as separate ones; 8 is the gap Apple leaves between controls
             // of this size.
             HStack(spacing: 8) {
-                if vm.notchState == .open && !enableMinimalisticUI {
-                    if Defaults[.showMirror] {
-                        Button(action: {
-                            vm.toggleCameraPreview()
-                        }) {
-                            Capsule()
-                                .fill(.black)
-                                .frame(width: 30, height: 30)
-                                .overlay {
-                                    headerGlyph("web.camera")
-                                }
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                    // 剪贴板已经是页签，头部不再放重复的图标。
-                }
-
             }
             .font(.system(.headline, design: .rounded))
             .frame(maxWidth: .infinity, alignment: .trailing)
@@ -133,5 +115,4 @@ struct DynamicIslandHeader: View {
 #Preview {
     DynamicIslandHeader()
         .environmentObject(DynamicIslandViewModel())
-        .environmentObject(WebcamManager.shared)
 }

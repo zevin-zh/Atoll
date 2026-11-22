@@ -213,19 +213,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let vm: DynamicIslandViewModel = .init()
     @ObservedObject var coordinator = DynamicIslandViewCoordinator.shared
     var timer: Timer?
-    let webcamManager = WebcamManager.shared
     let bluetoothAudioManager = BluetoothAudioManager.shared  // NEW: Bluetooth audio detection
     let idleAnimationManager = IdleAnimationManager.shared  // NEW: Custom idle animations
     var closeNotchWorkItem: DispatchWorkItem?
     private var previousScreens: [NSScreen]?
     private var cancellables = Set<AnyCancellable>()
     private var windowsHiddenForLock = false
-    private var optionalShortcutHandlersRegistered = false
     
     // Debouncing mechanism for window size updates
     private var windowSizeUpdateWorkItem: DispatchWorkItem?
 
-////    let webcamManager = WebcamManager.shared
 //    var closeNotchWorkItem: DispatchWorkItem?
 //    private var previousScreens: [NSScreen]?
 //    private var cancellables = Set<AnyCancellable>()
@@ -410,7 +407,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.contentView = FirstMouseHostingView(
             rootView: ContentView()
                 .environmentObject(viewModel)
-                .environmentObject(webcamManager)
                 //.moveToSky()
         )
         
@@ -581,11 +577,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         LockScreenManager.shared.configure(viewModel: vm)
         
-        // Migrate legacy progress bar settings
-        Defaults.Keys.migrateProgressBarStyle()
-        Defaults.Keys.migrateCapsLockTintMode()
-        Defaults.Keys.migrateClipboardShortcutToV()
-        
         // Initialize idle animations (load bundled + built-in face)
         idleAnimationManager.initializeDefaultAnimations()
 
@@ -620,17 +611,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.debouncedUpdateWindowSize()
         }.store(in: &cancellables)
 
-        Defaults.publisher(.enableShortcuts, options: []).sink { [weak self] change in
-            Task { @MainActor [weak self] in
-                guard let self else { return }
+        Defaults.publisher(.enableShortcuts, options: []).sink { change in
+            Task { @MainActor in
                 KeyboardShortcuts.isEnabled = change.newValue
-                self.updateFeatureShortcutAvailability()
-            }
-        }.store(in: &cancellables)
-
-        Defaults.publisher(.enableClipboardManager, options: []).sink { [weak self] _ in
-            Task { @MainActor [weak self] in
-                self?.updateFeatureShortcutAvailability()
             }
         }.store(in: &cancellables)
 
@@ -765,8 +748,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         KeyboardShortcuts.isEnabled = Defaults[.enableShortcuts]
-        registerOptionalShortcutHandlers()
-        updateFeatureShortcutAvailability()
 
         if !Defaults[.showOnAllDisplays] {
             let viewModel = self.vm
@@ -1013,46 +994,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         closeNotchWorkItem = nil
     }
 
-    private func registerOptionalShortcutHandlers() {
-        guard !optionalShortcutHandlersRegistered else { return }
-        optionalShortcutHandlersRegistered = true
-
-        KeyboardShortcuts.onKeyDown(for: .clipboardHistoryPanel) { [weak self] in
-            guard let self else { return }
-            guard Defaults[.enableShortcuts], Defaults[.enableClipboardManager] else { return }
-
-            if !ClipboardManager.shared.isMonitoring {
-                ClipboardManager.shared.startMonitoring()
-            }
-
-            if vm.notchState == .closed {
-                vm.open()
-                coordinator.currentView = .clipboard
-            } else {
-                if coordinator.currentView == .clipboard {
-                    vm.close()
-                } else {
-                    coordinator.currentView = .clipboard
-                }
-            }
-        }
-
-
-    }
-
-    @MainActor
-    private func updateFeatureShortcutAvailability() {
-        updateShortcut(.clipboardHistoryPanel, isEnabled: Defaults[.enableShortcuts] && Defaults[.enableClipboardManager])
-    }
-
-    @MainActor
-    private func updateShortcut(_ name: KeyboardShortcuts.Name, isEnabled: Bool) {
-        if isEnabled {
-            KeyboardShortcuts.enable(name)
-        } else {
-            KeyboardShortcuts.disable(name)
-        }
-    }
+    // ⇧⌘V 打开剪贴板面板的全局快捷键已移除：它把 currentView 设成 .clipboard，
+    // 而剪贴板在两种布局下都是岛内页签，没有对应的独立视图，按下去没有反应。
+    // 相关注册代码一并清掉，避免看起来“有这个功能”。
     
     func deviceHasNotch() -> Bool {
         if #available(macOS 12.0, *) {

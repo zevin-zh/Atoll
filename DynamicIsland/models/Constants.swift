@@ -516,9 +516,7 @@ extension Defaults.Keys {
         // MARK: Appearance
         //static let alwaysShowTabs = Key<Bool>("alwaysShowTabs", default: true)
     static let showMirror = Key<Bool>("showMirror", default: false)
-    static let mirrorShape = Key<MirrorShapeEnum>("mirrorShape", default: MirrorShapeEnum.rectangle)
     static let selectedCameraID = Key<String>("selectedCameraID", default: "")
-    static let lightingEffect = Key<Bool>("lightingEffect", default: true)
     static let accentColor = Key<Color>("accentColor", default: Color.blue)
     static let enableShadow = Key<Bool>("enableShadow", default: true)
     static let cornerRadiusScaling = Key<Bool>("cornerRadiusScaling", default: true)
@@ -527,16 +525,7 @@ extension Defaults.Keys {
     static let customIdleAnimations = Key<[CustomIdleAnimation]>("customIdleAnimations", default: [])
     static let selectedIdleAnimation = Key<CustomIdleAnimation?>("selectedIdleAnimation", default: nil)
     static let animationTransformOverrides = Key<[String: AnimationTransformConfig]>("animationTransformOverrides", default: [:])
-    static let tileShowLabels = Key<Bool>("tileShowLabels", default: false)
-    static let sliderColor = Key<SliderColorEnum>(
-        "sliderUseAlbumArtColor",
-        default: SliderColorEnum.white
-    )
-    static let playerColorTinting = Key<Bool>("playerColorTinting", default: true)
-    static let useMusicVisualizer = Key<Bool>("useMusicVisualizer", default: true)
-    static let visualizerBarCount = Key<Int>("visualizerBarCount", default: 4)
     static let colorExtractionMode = Key<ColorExtractionMode>("colorExtractionMode", default: .vibrant)
-    static let selectedVisualizer = Key<CustomVisualizer?>("selectedVisualizer", default: nil)
     static let customAppIcons = Key<[CustomAppIcon]>("customAppIcons", default: [])
     static let selectedAppIconID = Key<String?>("selectedAppIconID", default: nil)
     
@@ -544,21 +533,11 @@ extension Defaults.Keys {
     static let enableGestures = Key<Bool>("enableGestures", default: true)
     static let closeGestureEnabled = Key<Bool>("closeGestureEnabled", default: true)
     static let gestureSensitivity = Key<CGFloat>("gestureSensitivity", default: 200.0)
-    static let enableHorizontalMusicGestures = Key<Bool>("enableHorizontalMusicGestures", default: true)
-    static let musicGestureBehavior = Key<MusicSkipBehavior>("musicGestureBehavior", default: .track)
-    static let reverseSwipeGestures = Key<Bool>("reverseSwipeGestures", default: false)
     static let reverseScrollGestures = Key<Bool>("reverseScrollGestures", default: false)
     
         // MARK: Media playback
-    static let coloredSpectrogram = Key<Bool>("coloredSpectrogram", default: true)
     static let enableSneakPeek = Key<Bool>("enableSneakPeek", default: false)
     static let sneakPeekStyles = Key<SneakPeekStyle>("sneakPeekStyles", default: .standard)
-    static let showSneakPeekOnTrackChange = Key<Bool>("showSneakPeekOnTrackChange", default: true)
-    static let enableFullscreenMediaDetection = Key<Bool>("enableFullscreenMediaDetection", default: true)
-    static let parallaxEffectIntensity = Key<Double>("parallaxEffectIntensity", default: 6.0)
-    static let waitInterval = Key<Double>("waitInterval", default: 3)
-    static let showShuffleAndRepeat = Key<Bool>("showShuffleAndRepeat", default: true)
-    static let showMediaOutputControl = Key<Bool>("showMediaOutputControl", default: true)
     /// Whether the lock screen panel keeps a volume slider under the transport
     /// row, rather than leaving volume behind the output button.
     ///
@@ -566,74 +545,16 @@ extension Defaults.Keys {
     /// Show Volume Control" in Accessibility rather than showing the slider to
     /// everybody, because a Lock Screen that is mostly artwork is the point for
     /// most people and a permanent slider is a preference, not an improvement.
-    static let alwaysShowLockScreenVolume = Key<Bool>("alwaysShowLockScreenVolume", default: false)
-    static let musicSkipBehavior = Key<MusicSkipBehavior>("musicSkipBehavior", default: .track)
-    static let musicControlWindowEnabled = Key<Bool>("musicControlWindowEnabled", default: false)
     static let showStandardMediaControls = Key<Bool>("showStandardMediaControls", default: true)
-    static let autoHideInactiveNotchMediaPlayer = Key<Bool>("autoHideInactiveNotchMediaPlayer", default: true)
-    static let cachedMusicLiveActivityPreference = Key<Bool?>("cachedMusicLiveActivityPreference", default: nil)
-    static let cachedLockScreenMediaWidgetPreference = Key<Bool?>("cachedLockScreenMediaWidgetPreference", default: nil)
-    static let cachedMusicControlWindowPreference = Key<Bool?>("cachedMusicControlWindowPreference", default: nil)
     // Enable lock screen media widget (shows the standalone panel when screen is locked)
-    static let enableLockScreenMediaWidget = Key<Bool>("enableLockScreenMediaWidget", default: true)
-    static let enableLockScreenWeatherWidget = Key<Bool>("enableLockScreenWeatherWidget", default: true)
-    static let enableLockScreenFocusWidget = Key<Bool>("enableLockScreenFocusWidget", default: true)
-    static let siriResponsivenessMode = Key<SiriResponsivenessMode>("siriResponsivenessMode", default: .automatic)
-    static let lockScreenWeatherRefreshInterval = Key<TimeInterval>("lockScreenWeatherRefreshInterval", default: 30 * 60)
-    static let lockScreenWeatherShowsLocation = Key<Bool>("lockScreenWeatherShowsLocation", default: true)
-    static let lockScreenWeatherShowsSunrise = Key<Bool>("lockScreenWeatherShowsSunrise", default: true)
-    static let lockScreenWeatherWidgetStyle = Key<LockScreenWeatherWidgetStyle>("lockScreenWeatherWidgetStyle", default: .inline)
-    static let lockScreenWeatherTemperatureUnit = Key<LockScreenWeatherTemperatureUnit>("lockScreenWeatherTemperatureUnit", default: .matchingSystemPreference)
-    static let lockScreenWeatherShowsAQI = Key<Bool>("lockScreenWeatherShowsAQI", default: true)
-    static let lockScreenWeatherAQIScale = Key<LockScreenWeatherAirQualityScale>("lockScreenWeatherAQIScale", default: .us)
-    static let lockScreenWeatherUsesGaugeTint = Key<Bool>("lockScreenWeatherUsesGaugeTint", default: false)
-    static let lockScreenWeatherProviderSource = Key<LockScreenWeatherProviderSource>("lockScreenWeatherProviderSource", default: .openMeteo)
-    static let lockScreenWeatherVerticalOffset = Key<Double>("lockScreenWeatherVerticalOffset", default: 0)
-    static let lockScreenMusicVerticalOffset = Key<Double>("lockScreenMusicVerticalOffset", default: 0)
-    static let lockScreenMusicPanelWidth = Key<Double>("lockScreenMusicPanelWidth", default: 380)
-    static let lockScreenMusicAlbumParallaxEnabled = Key<Bool>("lockScreenMusicAlbumParallaxEnabled", default: false)
-    static let lockScreenWidgetAppearance = Key<LockScreenWidgetAppearance>("lockScreenWidgetAppearance", default: .dark)
-    static let lockScreenGlassStyle = Key<LockScreenGlassStyle>("lockScreenGlassStyle", default: .liquid)
-    static let lockScreenGlassCustomizationMode = Key<LockScreenGlassCustomizationMode>(
-        "lockScreenGlassCustomizationMode",
-        default: .standard
-    )
-    static let lockScreenMusicLiquidGlassVariant = Key<LiquidGlassVariant>(
-        "lockScreenMusicLiquidGlassVariant",
-        default: .defaultVariant
-    )
-    static let lockScreenShowAppIcon = Key<Bool>("lockScreenShowAppIcon", default: false)
-    static let lockScreenPanelShowsBorder = Key<Bool>("lockScreenPanelShowsBorder", default: false)
-    static let lockScreenMusicUsesEnhancedLiquidBorder = Key<Bool>(
-        "lockScreenMusicUsesEnhancedLiquidBorder",
-        default: true
-    )
-    static let lockScreenPanelUsesBlur = Key<Bool>("lockScreenPanelUsesBlur", default: true)
-    static let lockScreenMusicFullscreenArtworkEnabled = Key<Bool>("lockScreenMusicFullscreenArtworkEnabled", default: true)
-    static let lockScreenKeepAlbumArtVisibleDuringFullscreenArtwork = Key<Bool>("lockScreenKeepAlbumArtVisibleDuringFullscreenArtwork", default: false)
-    static let lockScreenMusicFullscreenVideoArtwork = Key<Bool>("lockScreenMusicFullscreenVideoArtwork", default: true)
-    static let lockScreenUseArtworkLayoutOverFullscreenCanvas = Key<Bool>("lockScreenShowCenteredAlbumArtOverFullscreenCanvas", default: true)
-    static let lockScreenWeatherWidgetRowOrder = Key<String>("lockScreenWeatherWidgetRowOrder", default: "weather_calendar_focus")
     
-    static let lockScreenBatteryShowsBatteryGauge = Key<Bool>(
-        "lockScreenWeatherShowsBatteryGauge",
-        default: true
-    )
-    static let lockScreenBatteryUsesLaptopSymbol = Key<Bool>("lockScreenWeatherBatteryUsesLaptopSymbol", default: true)
-    static let lockScreenBatteryShowsCharging = Key<Bool>("lockScreenWeatherShowsCharging", default: true)
-    static let lockScreenBatteryShowsChargingPercentage = Key<Bool>("lockScreenWeatherShowsChargingPercentage", default: true)
-    static let lockScreenBatteryShowsBluetooth = Key<Bool>("lockScreenWeatherShowsBluetooth", default: true)
     
         // MARK: Downloads
-    static let enableDownloadListener = Key<Bool>("enableDownloadListener", default: true)
-    static let selectedDownloadIndicatorStyle = Key<DownloadIndicatorStyle>("selectedDownloadIndicatorStyle", default: DownloadIndicatorStyle.progress)
-    static let showDownloadSpeed = Key<Bool>("showDownloadSpeed", default: false)
     
         // MARK: HUD
     static let inlineHUD = Key<Bool>("inlineHUD", default: true)
     static let progressBarStyle = Key<ProgressBarStyle>("progressBarStyle", default: .hierarchical)
     // Legacy support - keeping for backward compatibility
-    static let enableGradient = Key<Bool>("enableGradient", default: false)
     static let systemEventIndicatorShadow = Key<Bool>("systemEventIndicatorShadow", default: false)
     static let systemEventIndicatorUseAccent = Key<Bool>("systemEventIndicatorUseAccent", default: false)
     static let showProgressPercentages = Key<Bool>("showProgressPercentages", default: true)
@@ -659,12 +580,6 @@ extension Defaults.Keys {
     // MARK: Wobble Animation
     
     // MARK: Media Controller
-    static let mediaController = Key<MediaControllerType>("mediaController", default: defaultMediaController)
-    static let spotifySPDCCookie = Key<String>("spotifySPDCCookie", default: "")
-    static let spotifyAuthAccessToken = Key<String>("spotifyAuthAccessToken", default: "")
-    static let spotifyAuthAccessTokenExpiration = Key<Double>("spotifyAuthAccessTokenExpiration", default: 0)
-    static let spotifyAuthLastValidatedAt = Key<Double>("spotifyAuthLastValidatedAt", default: 0)
-    static let spotifyLibraryClientID = Key<String>("spotifyLibraryClientID", default: "")
 
     /// Token for Cider's external-application API, from
     /// Settings > Connectivity > Manage External Application Access in Cider.
@@ -679,12 +594,8 @@ extension Defaults.Keys {
     /// alternative, but it fires on `CiderTokenStore` -- the one place that is
     /// supposed to read this -- and a warning at the sanctioned use site is
     /// worse than none.
-    static let legacyCiderAPIToken = Key<String>("ciderAPIToken", default: "")
     // The OAuth token pair lives in the Keychain (see KeychainSpotifyTokenStore);
     // these two keys remain only for the one-time migration of early builds.
-    static let spotifyLibraryAccessToken = Key<String>("spotifyLibraryAccessToken", default: "")
-    static let spotifyLibraryRefreshToken = Key<String>("spotifyLibraryRefreshToken", default: "")
-    static let spotifyLibraryTokenExpiration = Key<Double>("spotifyLibraryTokenExpiration", default: 0)
     
     // MARK: Bluetooth Audio Devices
     static let showBluetoothDeviceConnections = Key<Bool>("showBluetoothDeviceConnections", default: true)
@@ -704,24 +615,9 @@ extension Defaults.Keys {
     /// Off keeps it in memory for the session only — nothing survives a quit.
     /// Defaults to true so existing installs keep the behaviour they have.
     static let persistClipboardHistory = Key<Bool>("persistClipboardHistory", default: true)
-    static let showClipboardIcon = Key<Bool>("showClipboardIcon", default: true)
     static let clipboardDisplayMode = Key<ClipboardDisplayMode>("clipboardDisplayMode", default: .panel)
     
     // MARK: Third-Party Extensions
-    static let enableThirdPartyExtensions = Key<Bool>("enableThirdPartyExtensions", default: true)
-    static let enableExtensionLiveActivities = Key<Bool>("enableExtensionLiveActivities", default: true)
-    static let enableExtensionLockScreenWidgets = Key<Bool>("enableExtensionLockScreenWidgets", default: true)
-    static let enableExtensionNotchExperiences = Key<Bool>("enableExtensionNotchExperiences", default: true)
-    static let enableExtensionNotchTabs = Key<Bool>("enableExtensionNotchTabs", default: true)
-    static let enableExtensionNotchMinimalisticOverrides = Key<Bool>("enableExtensionNotchMinimalisticOverrides", default: true)
-    static let enableExtensionNotchInteractiveWebViews = Key<Bool>("enableExtensionNotchInteractiveWebViews", default: true)
-    static let extensionAuthorizationEntries = Key<[ExtensionAuthorizationEntry]>("extensionAuthorizationEntries", default: [])
-    static let extensionRateLimitRecords = Key<[ExtensionRateLimitRecord]>("extensionRateLimitRecords", default: [])
-    static let extensionDiagnosticsLoggingEnabled = Key<Bool>("extensionDiagnosticsLoggingEnabled", default: true)
-    static let extensionLiveActivityCapacity = Key<Int>("extensionLiveActivityCapacity", default: 4)
-    static let extensionLockScreenWidgetCapacity = Key<Int>("extensionLockScreenWidgetCapacity", default: 4)
-    static let extensionNotchExperienceCapacity = Key<Int>("extensionNotchExperienceCapacity", default: 2)
-    static let enableExtensionFileSharing = Key<Bool>("enableExtensionFileSharing", default: true)
     
     // MARK: Keyboard Shortcuts
     static let enableShortcuts = Key<Bool>("enableShortcuts", default: true)
@@ -751,84 +647,16 @@ extension Defaults.Keys {
     
     
     // MARK: Lock Screen Features
-    static let enableLockScreenLiveActivity = Key<Bool>("enableLockScreenLiveActivity", default: true)
-    static let lockScreenLiveActivityIconStyle = Key<LockScreenLiveActivityIconStyle>("lockScreenLiveActivityIconStyle", default: .lock)
-    static let enableLockSounds = Key<Bool>("enableLockSounds", default: true)
     
     // MARK: Caps Lock Indicator
     static let enableCapsLockIndicator = Key<Bool>("enableCapsLockIndicator", default: true)
     static let capsLockIndicatorTintMode = Key<CapsLockIndicatorTintMode>("capsLockIndicatorTintMode", default: .white)
-    static let capsLockIndicatorUseGreenColor = Key<Bool>("capsLockIndicatorUseGreenColor", default: false) // Legacy toggle
     static let showCapsLockLabel = Key<Bool>("showCapsLockLabel", default: false)
     
-    static let didMigrateCapsLockTintMode = Key<Bool>("didMigrateCapsLockTintMode", default: false)
-    static let didMigrateClipboardShortcutToV = Key<Bool>("didMigrateClipboardShortcutToV", default: false)
     // MARK: ImageService
     static let didClearLegacyURLCacheV1 = Key<Bool>("didClearLegacyURLCacheV1", default: false)
     
     // MARK: Minimalistic UI Mode
     static let enableMinimalisticUI = Key<Bool>("enableMinimalisticUI", default: false)
     
-    // MARK: Lyrics Feature
-    static let enableLyrics = Key<Bool>("enableLyrics", default: false)
-
-    /// Whether the sung line is swept or simply lit.
-    static let lyricHighlightStyle = Key<LyricHighlightStyle>("lyricHighlightStyle", default: .sweep)
-    /// Keeps the current line under the closed notch after the panel is gone.
-    static let lyricsPanelWidth = Key<CGFloat>("lyricsPanelWidth", default: 280)
-    static let lyricsPanelOffset = Key<CGFloat>("lyricsPanelOffset", default: 0)
-    static let showLiveCanvasInDynamicIsland = Key<Bool>("showLiveCanvasInDynamicIsland", default: false)
-    
-    /// Now Playing reads the system's own now-playing information through
-    /// MediaRemote, which needs no Automation grant and no scriptable app.
-    /// Every source that had to drive a player over Apple Events has been
-    /// removed, so this is the only default that can start up without a
-    /// permission prompt.
-    static var defaultMediaController: MediaControllerType { .nowPlaying }
-    
-    // Migration helper to convert from legacy enableGradient Boolean to new ProgressBarStyle enum
-    static func migrateProgressBarStyle() {
-        // Check if migration is needed by seeing if the old Boolean was set to gradient
-        let wasGradientEnabled = Defaults[.enableGradient]
-        
-        // Only migrate if we're still using the default hierarchical value but gradient was enabled
-        if wasGradientEnabled && Defaults[.progressBarStyle] == .hierarchical {
-            Defaults[.progressBarStyle] = .gradient
-        }
-    }
-
-    /// Move the clipboard shortcut off the old Cmd+Shift+C default.
-    ///
-    /// Settings has always documented Cmd+Shift+V ("similar to Windows+V on PC") while the
-    /// shortcut was registered as Cmd+Shift+C. Changing the default alone fixes nothing for
-    /// anyone who has already launched Atoll: `KeyboardShortcuts.Name` writes its default into
-    /// UserDefaults on first run and never overwrites it, so the old value would win forever.
-    ///
-    /// Only a shortcut still sitting on the old default is moved. Anyone who picked their own
-    /// keeps it — including, unavoidably, anyone who deliberately chose Cmd+Shift+C.
-    ///
-    /// The marker is written last: if this crashed between marking and moving, the migration
-    /// would be considered done while the shortcut still sat on the old key, with no second
-    /// chance to correct it. Running twice is harmless by comparison, since the second run
-    /// finds Cmd+Shift+V rather than the legacy default and changes nothing.
-    static func migrateClipboardShortcutToV() {
-        guard Defaults[.didMigrateClipboardShortcutToV] == false else { return }
-
-        let legacyDefault = KeyboardShortcuts.Shortcut(.c, modifiers: [.shift, .command])
-        if KeyboardShortcuts.getShortcut(for: .clipboardHistoryPanel) == legacyDefault {
-            KeyboardShortcuts.setShortcut(.init(.v, modifiers: [.shift, .command]), for: .clipboardHistoryPanel)
-        }
-
-        Defaults[.didMigrateClipboardShortcutToV] = true
-    }
-
-    static func migrateCapsLockTintMode() {
-        guard Defaults[.didMigrateCapsLockTintMode] == false else { return }
-
-        let legacyGreen = Defaults[.capsLockIndicatorUseGreenColor]
-        Defaults[.capsLockIndicatorTintMode] = legacyGreen ? .green : .white
-        Defaults[.didMigrateCapsLockTintMode] = true
-    }
-
-    static let showSongMetadataInClosedNotch = Key<Bool>("showSongMetadataInClosedNotch", default: false)
 }
