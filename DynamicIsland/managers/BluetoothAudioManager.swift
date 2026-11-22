@@ -2562,18 +2562,20 @@ enum AirPodsListeningMode: Equatable {
     case conversationAwareness
     case off
 
+    /// HUD 上显示的聆听模式名称，用 Apple 官方中文说法（降噪 / 通透模式 / 自适应音频 / 对话感知 / 关闭）。
+    /// 直接写死中文，不走字符串目录——这几个 key 在 catalog 里只有韩语等译文，没有 zh-Hans。
     var displayName: String {
         switch self {
         case .noiseCancellation:
-            return String(localized: "Noise Cancellation")
+            return "降噪"
         case .transparency:
-            return String(localized: "Transparency")
+            return "通透模式"
         case .adaptive:
-            return String(localized: "Adaptive Audio")
+            return "自适应音频"
         case .conversationAwareness:
-            return String(localized: "Conversation Awareness")
+            return "对话感知"
         case .off:
-            return String(localized: "Off")
+            return "关闭"
         }
     }
 
