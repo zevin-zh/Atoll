@@ -39,12 +39,8 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Validate privacy configuration
-        run: python3 -m unittest tests.test_privacy_configuration
-
-      - name: Validate timer lifecycle cleanup
-        run: python3 -m unittest tests.test_timer_lifecycle
-
+      # 原来这里还有两个 python 校验（privacy / timer），是上游签名发布流程的
+      # 遗留：隐私指示器和计时器功能都已删除，断言本身也早就对不上，直接去掉。
       - name: Download Metal Toolchain
         # The downloadable Metal Toolchain is an Xcode 26+ (macOS 26) component; older Xcode ships metal.
         run: |
@@ -82,7 +78,7 @@ jobs:
 
           xcodebuild build \
             -project Z-island.xcodeproj \
-            -scheme DynamicIsland \
+            -scheme Z-island \
             -destination "platform=macOS" \
             -resultBundlePath BuildResults.xcresult \
             CODE_SIGN_IDENTITY="-" \
