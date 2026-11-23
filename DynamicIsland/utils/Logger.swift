@@ -170,4 +170,20 @@ public func NSLog(_ format: String, _ args: CVarArg...) {
     if simulatedLevel.rawValue > configuredLevel.rawValue { return }
     
     Foundation.NSLog("%@", message)
-} 
+}
+
+/// 同上，给散布全项目的 `print` 也扣上闸门。
+///
+/// 下面的注释早就写了“filter scattered print and NSLog statements”，
+/// 但实际上只盖住了 NSLog：84 处 `print` 在 Release 里照样往 stdout 写，
+/// LaunchServices 起的 app 没人读 stdout，纯开销 + 会把剪贴板内容之类的东西
+/// 写进系统捕获的日志。默认 `logLevel = .none`，所以默认全部静默。
+/// 需要看日志时在菜单里把级别调上去即可。
+public func print(_ items: Any..., separator: String = " ", terminator: String = "\n") {
+    let configuredLevel = Defaults[.logLevel]
+    if configuredLevel == .none { return }
+    if LogLevel.debug.rawValue > configuredLevel.rawValue { return }
+
+    let message = items.map { "\($0)" }.joined(separator: separator)
+    Swift.print(message, terminator: terminator)
+}

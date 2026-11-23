@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.w3.org/2000/DTDs/PropertyList-1.0.dtd">
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
@@ -28,43 +28,19 @@
 	<true/>
 	<key>MetalCaptureEnabled</key>
 	<true/>
-	<key>NSAppleEventsUsageDescription</key>
-	<string>Z-island uses AppleScripts to control Spotify, Apple Music, and Notes.</string>
-	<key>NSAppleMusicUsageDescription</key>
-	<string>Z-island uses Apple Music to fetch animated artwork for the lock screen wallpaper.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
-	<key>NSAudioCaptureUsageDescription</key>
-	<string>Z-island needs audio capture permission to show the real-time music waveform and to set the volume of individual apps. Audio is only processed live and is never recorded or saved.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Z-island needs Bluetooth access to detect when audio devices connect and display their battery status in the HUD.</string>
-	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>Show calender events inside the notch</string>
-	<key>NSCalendarsUsageDescription</key>
-	<string>Need for Calendar Mode</string>
-	<key>NSCameraUsageDescription</key>
-	<string>We need your camera for Mirror mode</string>
-	<key>NSDesktopFolderUsageDescription</key>
-	<string>Z-island needs access to save screenshots to your desktop.</string>
 	<key>NSDocumentsFolderUsageDescription</key>
 	<string>Z-island needs access to save and read shelf dragged files.</string>
 	<key>NSDownloadsFolderUsageDescription</key>
 	<string>Z-island needs access to read files in the downloads folder.</string>
-	<key>NSLocationUsageDescription</key>
-	<string>Z-island uses your location to display accurate lock screen weather.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Z-island uses your location to display accurate lock screen weather.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Z-island needs microphone access to record voice questions for the AI assistant feature.</string>
-	<key>NSRemindersFullAccessUsageDescription</key>
-	<string>Z-island needs Reminders access to show your reminders</string>
-	<key>NSRemindersUsageDescription</key>
-	<string>Z-island needs Reminders access to show your reminders</string>
 	<key>NSScreenCaptureUsageDescription</key>
-	<string>Z-island needs screen recording permission to capture screenshots for the AI assistant feature.</string>
+	<string>Z-island uses screen recording access to read window layout so the notch can avoid covering your windows.</string>
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
 	<key>SUEnableDownloaderService</key>

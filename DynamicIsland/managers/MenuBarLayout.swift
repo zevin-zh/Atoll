@@ -177,8 +177,16 @@ final class MenuBarLayout: ObservableObject {
 
             var origin = CGPoint.zero
             var size = CGSize.zero
-            guard AXValueGetValue(positionValue as! AXValue, .cgPoint, &origin),
-                  AXValueGetValue(sizeValue as! AXValue, .cgSize, &size)
+            // 先核对 CFTypeID 再强转：个别 app 的 AX 项返回的不是 AXValue，
+            // 直接 `as!` 会把整个进程带走。（对 CF 类型 `as?` 是恒成功的，编译器也不让写。）
+            guard let positionRaw = positionValue,
+                  let sizeRaw = sizeValue,
+                  CFGetTypeID(positionRaw) == AXValueGetTypeID(),
+                  CFGetTypeID(sizeRaw) == AXValueGetTypeID()
+            else { continue }
+
+            guard AXValueGetValue(positionRaw as! AXValue, .cgPoint, &origin),
+                  AXValueGetValue(sizeRaw as! AXValue, .cgSize, &size)
             else { continue }
 
             rightEdge = max(rightEdge ?? 0, origin.x + size.width)

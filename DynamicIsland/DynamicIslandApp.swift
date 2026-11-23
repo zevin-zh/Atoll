@@ -702,9 +702,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self.cleanupWindows(shouldInvert: true)
 
             if !Defaults[.showOnAllDisplays] {
+                // 拔外接屏、合盖那一瞬间 `screens` 可能是空的，别强解。
+                guard let screen = NSScreen.main ?? NSScreen.screens.first else { return }
                 let viewModel = self.vm
-                let window = self.createDynamicIslandWindow(
-                    for: NSScreen.main ?? NSScreen.screens.first!, with: viewModel)
+                let window = self.createDynamicIslandWindow(for: screen, with: viewModel)
                 self.window = window
                 self.adjustWindowPosition(changeAlpha: true)
             } else {
@@ -770,11 +771,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         KeyboardShortcuts.isEnabled = Defaults[.enableShortcuts]
 
         if !Defaults[.showOnAllDisplays] {
-            let viewModel = self.vm
-            let window = createDynamicIslandWindow(
-                for: NSScreen.main ?? NSScreen.screens.first!, with: viewModel)
-            self.window = window
-            adjustWindowPosition(changeAlpha: true)
+            // 没有屏幕时（合盖、拔屏瞬间）跳过建窗，避免 `first!` 崩掉。
+            if let screen = NSScreen.main ?? NSScreen.screens.first {
+                let viewModel = self.vm
+                let window = createDynamicIslandWindow(for: screen, with: viewModel)
+                self.window = window
+                adjustWindowPosition(changeAlpha: true)
+            } else {
+                adjustWindowPosition(changeAlpha: true)
+            }
         } else {
             adjustWindowPosition(changeAlpha: true)
         }
