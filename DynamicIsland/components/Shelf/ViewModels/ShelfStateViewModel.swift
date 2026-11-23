@@ -126,6 +126,14 @@ final class ShelfStateViewModel: ObservableObject {
         applyCachedPaths([itemID: path], resolvedFrom: [itemID: source])
     }
 
+    /// 暂存架最多留这么多条。
+    ///
+    /// 它只是个临时中转站，之前没有任何上限：拖过的东西会一直躺在 items.json 里，
+    /// 攒到几十条以后默认展开会铺满整屏，而且持久化数据只增不减。
+    /// 超出时丢最旧的那批（`add` 是往尾部追加，所以最旧的在头部），
+    /// 顺手把临时文件的存储也清掉，别留下孤儿。
+    static let maxItemCount = 20
+
     func add(_ newItems: [ShelfItem]) {
         guard !newItems.isEmpty else { return }
         var merged = items
@@ -138,6 +146,13 @@ final class ShelfStateViewModel: ObservableObject {
         }
         // Every duplicate-only drop would otherwise trigger a save and a publish.
         guard !addedIDs.isEmpty else { return }
+
+        let overflow = merged.count - Self.maxItemCount
+        if overflow > 0 {
+            merged.prefix(overflow).forEach { $0.cleanupStoredData() }
+            merged.removeFirst(overflow)
+        }
+
         items = merged
         invalidateURLCache()
     }

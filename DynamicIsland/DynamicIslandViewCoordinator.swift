@@ -105,7 +105,9 @@ class DynamicIslandViewCoordinator: ObservableObject {
         didSet {
             if !alwaysShowTabs {
                 openLastTabByDefault = false
-                if TrayDrop.shared.isEmpty || !Defaults[.openShelfByDefault] {
+                // 原来读的是 TrayDrop（上游遗留、从不被填充的模型，所以恒为 true）。
+                // 现在暂存架的唯一数据源是 ShelfStateViewModel。
+                if ShelfStateViewModel.shared.isEmpty || !Defaults[.openShelfByDefault] {
                     currentView = .shelf
                 }
             }

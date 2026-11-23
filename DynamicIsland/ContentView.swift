@@ -94,7 +94,14 @@ struct ContentView: View {
     /// 形状动画期间 SwiftUI 会误报 hover 离开，这里延迟复核指针是否真的走了。
     @State private var hoverExitRecheckTask: Task<Void, Never>?
     /// 位置轮询兜底：完全不依赖 SwiftUI 的 onHover 命中测试。
+    ///
+    /// 现在只在“收不到指针事件”时（没有辅助功能权限）才按高频率跑，
+    /// 其余时间交给下面的 `pointerMonitor`，间隔降到 1s 纯做兜底。
     @State private var hoverPollerTask: Task<Void, Never>?
+    /// 指针事件监听：全局/本地 `mouseMoved` + `leftMouseDragged`。
+    /// 装上之后就不再需要 100ms 的常开轮询——鼠标不动就没有回调。
+    @State private var pointerMonitor: Any?
+    @State private var pointerLocalMonitor: Any?
     @State private var isHovering: Bool = false
     @State private var lastHapticTime: Date = Date()
     @State private var hoverClickMonitor: Any?
@@ -693,6 +700,10 @@ struct ContentView: View {
     private func performViewTeardown() {
         menuBarLayout.stopTracking()
         hoverTask?.cancel()
+        // 这两个之前没拆：窗口关掉以后轮询和指针监听会一直活着。
+        hoverPollerTask?.cancel()
+        hoverPollerTask = nil
+        stopPointerMonitor()
         stopHoverClickMonitor()
         stopHiddenEdgeHoverPolling()
     }
@@ -855,10 +866,18 @@ struct ContentView: View {
     /// 那时页面已经被它按"上次的页面"打开了。
     /// 返回 true 表示当前处于文件拖拽会话，调用方应跳过常规悬停处理。
     private func handleFileDragIfNeeded() -> Bool {
+        // 没按着鼠标键就不可能是拖拽。先挡掉：指针事件现在按鼠标移动频率触发，
+        // 每次移动都去开 `.drag` 粘贴板读类型太浪费了。
+        guard NSEvent.pressedMouseButtons != 0 else {
+            if NotchBridge.shared.isFileDragActive {
+                NotchBridge.shared.isFileDragActive = false
+            }
+            return false
+        }
+
         let dragBoard = NSPasteboard(name: .drag)
-        let types = dragBoard.types ?? []
-        // 拖拽结束后 .drag 粘贴板可能还留着类型，必须同时要求鼠标键处于按下状态。
-        let isFileDrag = types.contains(.fileURL) && NSEvent.pressedMouseButtons != 0
+        // 拖拽结束后 .drag 粘贴板可能还留着类型，所以按着键也要再确认一次类型。
+        let isFileDrag = (dragBoard.types ?? []).contains(.fileURL)
 
         guard isFileDrag else {
             if NotchBridge.shared.isFileDragActive {
@@ -897,15 +916,60 @@ struct ContentView: View {
         return rect.insetBy(dx: -4, dy: -4).contains(NSEvent.mouseLocation)
     }
 
-    /// 100ms 位置轮询：直接按鼠标坐标判断是否在刘海上，绕开 onHover 的抖动。
+    /// 悬停检测的主驱动。
+    ///
+    /// 收起态的悬停以前靠一个 100ms 的 while 循环轮询鼠标坐标（见 git 历史），
+    /// 等于每秒唤醒 10 次、每次还读一遍 `.drag` 粘贴板，空闲时也在跟 App Nap
+    /// 抢 CPU。现在改成监听指针事件：鼠标不动就没有回调，空闲开销归零。
+    ///
+    /// 事件监听需要辅助功能权限，拿不到时（`pointerMonitor == nil`）
+    /// 退回原来那档频率的轮询，行为不变。
     private func startHoverPolling() {
         hoverPollerTask?.cancel()
+        startPointerMonitor()
+
         hoverPollerTask = Task { @MainActor in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(100))
+                try? await Task.sleep(for: .milliseconds(hoverFallbackIntervalMs))
                 if Task.isCancelled { break }
                 pollHover()
             }
+        }
+    }
+
+    /// 事件监听在跑的话，轮询只做兜底（防某次事件漏掉把岛卡在展开态）；
+    /// 没权限时收不到事件，只能维持高频轮询。
+    private var hoverFallbackIntervalMs: Int {
+        pointerMonitor != nil ? 1_000 : 100
+    }
+
+    private func startPointerMonitor() {
+        guard pointerMonitor == nil, pointerLocalMonitor == nil else { return }
+
+        // 全局：指针在别的 app 上移动 / 拖着别的 app 的文件经过刘海。
+        pointerMonitor = NSEvent.addGlobalMonitorForEvents(
+            matching: [.mouseMoved, .leftMouseDragged]
+        ) { _ in
+            Task { @MainActor in pollHover() }
+        }
+
+        // 本地：指针落在我们自己的窗口上时全局监听收不到事件。
+        pointerLocalMonitor = NSEvent.addLocalMonitorForEvents(
+            matching: [.mouseMoved, .leftMouseDragged]
+        ) { event in
+            Task { @MainActor in pollHover() }
+            return event
+        }
+    }
+
+    private func stopPointerMonitor() {
+        if let pointerMonitor {
+            NSEvent.removeMonitor(pointerMonitor)
+            self.pointerMonitor = nil
+        }
+        if let pointerLocalMonitor {
+            NSEvent.removeMonitor(pointerLocalMonitor)
+            self.pointerLocalMonitor = nil
         }
     }
 
