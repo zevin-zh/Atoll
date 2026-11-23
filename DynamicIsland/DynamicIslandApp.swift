@@ -574,9 +574,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
     
-    func applicationDidFinishLaunching(_ notification: Notification) {
+    /// 启动时“不急着做”的初始化，统一挪到首帧之后跑。
+    ///
+    /// 每一项都不影响窗口出现：动画资源是挂上岛以后才播的，应用图标改的是
+    /// Finder 里那个图标，主菜单只在激活时才被打开，HUD 要等第一次按键，
+    /// 剪贴板监控晚一个 runloop 开始也漏不掉东西。
+    private func performDeferredLaunchSetup() {
         LockScreenManager.shared.configure(viewModel: vm)
-        
+
         // Initialize idle animations (load bundled + built-in face)
         idleAnimationManager.initializeDefaultAnimations()
 
@@ -585,7 +590,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Setup SystemHUD Manager
         SystemHUDManager.shared.setup(coordinator: coordinator)
-        
+
         // Honour "Save History Across Restarts" before anything can read the
         // stored history back.
         ClipboardManager.purgeStoredHistoryIfPersistenceDisabled()
@@ -593,6 +598,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // 剪贴板采集不再依赖头部那个图标（已移除），开着就随 app 启动。
         if Defaults[.enableClipboardManager], !ClipboardManager.shared.isMonitoring {
             ClipboardManager.shared.startMonitoring()
+        }
+    }
+
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // 首帧只做“让岛出现”必需的事。
+        //
+        // 下面这些（动画资源、程序图标、主菜单、HUD 管路、剪贴板历史）没有一样
+        // 影响窗口出现，但彩排时全挤在这里，把 didFinishLaunching 拖到 292ms。
+        // 现在统一挪到首帧之后，用两次主队列轮转做保证（第一次里 SwiftUI
+        // 提交首帧，第二次才轮到这些）。
+        DispatchQueue.main.async {
+            DispatchQueue.main.async { [weak self] in
+                self?.performDeferredLaunchSetup()
+            }
         }
 
         
