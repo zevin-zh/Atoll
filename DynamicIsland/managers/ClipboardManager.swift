@@ -258,8 +258,30 @@ class ClipboardManager: ObservableObject {
     private init() {
         lastChangeCount = NSPasteboard.general.changeCount
         loadHistoryFromDefaults()
-        cleanupOldFiles()
+        scheduleStaleFileCleanup()
         observeHistoryPersistence()
+    }
+
+    /// 清掉不再被引用的图片文件。
+    ///
+    /// 放到后台队列：目录在 `~/Documents/ClipboardData`，没拿到文件夹授权时
+    /// `contentsOfDirectory` 会卡在 `open()` 上等 TCC。以前这是在 `init` 里
+    /// 同步跑的，主线程一旦被它卡住整个 app 假死（实测启动时卡过 83 秒，
+    /// 跑单元测试时直接把 xctest 拖到超时）。
+    private func scheduleStaleFileCleanup() {
+        let referenced = Set(clipboardHistory.compactMap { $0.imageFileName })
+            .union(pinnedItems.compactMap { $0.imageFileName })
+
+        DispatchQueue.global(qos: .utility).async {
+            let directory = ClipboardManager.clipboardDataDirectory
+            guard let files = try? FileManager.default.contentsOfDirectory(
+                at: directory, includingPropertiesForKeys: nil
+            ) else { return }
+
+            for file in files where !referenced.contains(file.lastPathComponent) {
+                try? FileManager.default.removeItem(at: file)
+            }
+        }
     }
 
     /// Turning persistence off has to erase what is already on disk, otherwise

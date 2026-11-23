@@ -137,6 +137,9 @@ struct ContentView: View {
     // MARK: - Tab switch direction for smooth transitions
     
     private var tabSwitchTransition: AnyTransition {
+        // 减弱动效时只做淡入淡出，不做横向位移——后者是引起不适的主要来源。
+        if Motion.isReduced { return .opacity }
+
         if coordinator.tabSwitchForward {
             return .asymmetric(
                 insertion: .move(edge: .trailing).combined(with: .opacity),
@@ -821,7 +824,7 @@ struct ContentView: View {
         }
 
         if hovering {
-            withAnimation(.bouncy.speed(1.2)) {
+            withAnimation(Motion.respected(.bouncy.speed(1.2))) {
                 isHovering = true
             }
 
@@ -1008,7 +1011,7 @@ struct ContentView: View {
     }
 
     private func finishHoverExit() {
-        withAnimation(.bouncy.speed(1.2)) {
+        withAnimation(Motion.respected(.bouncy.speed(1.2))) {
             isHovering = false
         }
 
@@ -1115,12 +1118,12 @@ struct ContentView: View {
     private func handleOpenScrollGesture(translation: CGFloat, phase: NSEvent.Phase) {
         guard vm.notchState == .closed else { return }
 
-        withAnimation(.smooth) {
+        withAnimation(Motion.respected(.smooth)) {
             gestureProgress = (translation / Defaults[.gestureSensitivity]) * 20
         }
 
         if phase == .ended {
-            withAnimation(.smooth) {
+            withAnimation(Motion.respected(.smooth)) {
                 gestureProgress = .zero
             }
         }
@@ -1129,7 +1132,7 @@ struct ContentView: View {
             if Defaults[.enableHaptics] {
                 triggerHapticIfAllowed()
             }
-            withAnimation(.smooth) {
+            withAnimation(Motion.respected(.smooth)) {
                 gestureProgress = .zero
             }
             openNotch()
@@ -1139,18 +1142,18 @@ struct ContentView: View {
     private func handleCloseScrollGesture(translation: CGFloat, phase: NSEvent.Phase) {
         guard vm.notchState == .open, !vm.isScrollGestureActive else { return }
 
-        withAnimation(.smooth) {
+        withAnimation(Motion.respected(.smooth)) {
             gestureProgress = (translation / Defaults[.gestureSensitivity]) * -20
         }
 
         if phase == .ended {
-            withAnimation(.smooth) {
+            withAnimation(Motion.respected(.smooth)) {
                 gestureProgress = .zero
             }
         }
 
         if translation > Defaults[.gestureSensitivity] {
-            withAnimation(.smooth) {
+            withAnimation(Motion.respected(.smooth)) {
                 gestureProgress = .zero
                 isHovering = false
             }

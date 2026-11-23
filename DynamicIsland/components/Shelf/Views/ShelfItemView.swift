@@ -76,8 +76,8 @@ struct ShelfItemView: View {
             // Keep removal reachable without hover (VoiceOver / keyboard):
             // expose the item as one element with a named remove action.
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(viewModel.displayName.isEmpty ? Text("暂存项") : Text(viewModel.displayName))
-            .accessibilityAction(named: Text("从暂存架移除")) {
+            .accessibilityLabel(viewModel.displayName.isEmpty ? Text("Shelf item") : Text(viewModel.displayName))
+            .accessibilityAction(named: Text("Remove from Shelf")) {
                 ShelfActionService.remove(item)
             }
 
@@ -176,7 +176,7 @@ struct ShelfItemView: View {
         .contentShape(Circle())
         .padding(ShelfRemoveButton.inset)
         .help("Remove from Shelf")
-        .accessibilityLabel("从暂存架移除")
+        .accessibilityLabel("Remove from Shelf")
         .transition(.scale.combined(with: .opacity))
     }
 

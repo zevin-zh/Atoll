@@ -2544,15 +2544,15 @@ enum AirPodsListeningMode: Equatable {
     var displayName: String {
         switch self {
         case .noiseCancellation:
-            return "降噪"
+            return "Noise Cancellation"
         case .transparency:
-            return "通透模式"
+            return "Transparency"
         case .adaptive:
-            return "自适应音频"
+            return "Adaptive Audio"
         case .conversationAwareness:
-            return "对话感知"
+            return "Conversation Awareness"
         case .off:
-            return "关闭"
+            return "Off"
         }
     }
 

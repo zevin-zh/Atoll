@@ -20,7 +20,7 @@ import AppKit
 import Defaults
 import XCTest
 
-@testable import Atoll
+@testable import Z_island
 
 /// "Save History Across Restarts" is a privacy promise, so the parts that make
 /// it true are worth pinning down: nothing written while it is off, nothing

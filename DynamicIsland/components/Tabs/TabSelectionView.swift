@@ -54,12 +54,12 @@ struct TabSelectionView: View {
         var tabsArray: [TabModel] = []
 
         if Defaults[.dynamicShelf] {
-            tabsArray.append(TabModel(label: "暂存", icon: "tray.fill", view: .shelf))
+            tabsArray.append(TabModel(label: "Shelf", icon: "tray.fill", view: .shelf))
         }
 
         // 剪贴板在默认布局和简约布局下都是独立页签。
         if Defaults[.enableClipboardManager] {
-            tabsArray.append(TabModel(label: "剪贴板", icon: "doc.on.clipboard", view: .clipboard))
+            tabsArray.append(TabModel(label: "Clipboard", icon: "doc.on.clipboard", view: .clipboard))
         }
 
         return tabsArray
@@ -77,12 +77,15 @@ struct TabSelectionView: View {
                     let oldIndex = tabs.firstIndex(where: { $0.view == coordinator.currentView }) ?? 0
                     let newIndex = tabs.firstIndex(where: { $0.id == tab.id }) ?? 0
                     coordinator.pendingTabDirectionOverride = newIndex >= oldIndex
-                    withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
+                    withAnimation(Motion.respected(.spring(response: 0.36, dampingFraction: 0.86))) {
                         coordinator.currentView = tab.view
                     }
                 }
                 .frame(height: 26)
                 .foregroundStyle(isSelected ? activeAccent : .gray)
+                // VoiceOver 能读出标签名和"已选中"
+                .accessibilityLabel(Text(tab.label))
+                .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
                 .background {
                     // 只让选中项持有这个胶囊：同一 id 出现多个视图时，
                     // matchedGeometryEffect 的插值起点会跳到错误位置。

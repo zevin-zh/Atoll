@@ -34,16 +34,6 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "9CA407B492164F5AEF356E38"
-               BuildableName = "DynamicIslandUITests.xctest"
-               BlueprintName = "DynamicIslandUITests"
-               ReferencedContainer = "container:Z-island.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
-         <TestableReference
-            skipped = "NO">
-            <BuildableReference
-               BuildableIdentifier = "primary"
                BlueprintIdentifier = "0BED81992D1F2C18E8684884"
                BuildableName = "DynamicIslandTests.xctest"
                BlueprintName = "DynamicIslandTests"

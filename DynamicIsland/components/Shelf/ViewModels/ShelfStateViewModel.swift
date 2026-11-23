@@ -130,9 +130,18 @@ final class ShelfStateViewModel: ObservableObject {
     ///
     /// 它只是个临时中转站，之前没有任何上限：拖过的东西会一直躺在 items.json 里，
     /// 攒到几十条以后默认展开会铺满整屏，而且持久化数据只增不减。
-    /// 超出时丢最旧的那批（`add` 是往尾部追加，所以最旧的在头部），
-    /// 顺手把临时文件的存储也清掉，别留下孤儿。
     static let maxItemCount = 20
+
+    /// 只留最后 `limit` 条（最新的在数组尾部），超出的从头部抬走。
+    /// 抽成纯函数是为了能直接跑测试，不必把单例的磁盘状态拉进来。
+    static func trimmingToLimit(
+        _ items: [ShelfItem],
+        limit: Int = maxItemCount
+    ) -> (kept: [ShelfItem], evicted: [ShelfItem]) {
+        guard items.count > limit else { return (items, []) }
+        let cut = items.count - limit
+        return (Array(items.dropFirst(cut)), Array(items.prefix(cut)))
+    }
 
     func add(_ newItems: [ShelfItem]) {
         guard !newItems.isEmpty else { return }
@@ -147,13 +156,10 @@ final class ShelfStateViewModel: ObservableObject {
         // Every duplicate-only drop would otherwise trigger a save and a publish.
         guard !addedIDs.isEmpty else { return }
 
-        let overflow = merged.count - Self.maxItemCount
-        if overflow > 0 {
-            merged.prefix(overflow).forEach { $0.cleanupStoredData() }
-            merged.removeFirst(overflow)
-        }
+        let trimmed = Self.trimmingToLimit(merged)
+        trimmed.evicted.forEach { $0.cleanupStoredData() }
 
-        items = merged
+        items = trimmed.kept
         invalidateURLCache()
     }
 

@@ -161,7 +161,7 @@ struct FileShareView: View {
                     }
                     .popover(isPresented: $showQuickSharePopover, arrowEdge: .bottom) {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("快速分享")
+                            Text("Quick Share")
                                 .font(.headline)
 
                             Picker("Quick Share Service", selection: $quickShareProvider) {
@@ -204,14 +204,14 @@ struct FileShareView: View {
                                     .foregroundColor(.accentColor)
 
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text("当前：\(selected.id)")
+                                        Text("Current service: \(selected.id)")
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                             .lineLimit(1)
                                             .truncationMode(.tail)
                                             .layoutPriority(1)
                                             .fixedSize(horizontal: true, vertical: false)
-                                        Text("从暂存架分享的文件会走这个服务")
+                                        Text("Files shared from the shelf go through this service")
                                             .font(.caption2)
                                             .foregroundStyle(.secondary)
                                     }

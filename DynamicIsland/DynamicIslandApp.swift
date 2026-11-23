@@ -58,7 +58,7 @@ struct DynamicNotchApp: App {
             ShowMenuBarIconToggle()
             Divider()
             CheckForUpdatesButton(updater: updaterController.updater)
-            Button("重启 Z-island") {
+            Button("Restart Z-island") {
                 guard let bundleIdentifier = Bundle.main.bundleIdentifier else { return }
 
                 let workspace = NSWorkspace.shared
@@ -74,7 +74,7 @@ struct DynamicNotchApp: App {
 
                 NSApplication.shared.terminate(self)
             }
-            Button("退出 Z-island", role: .destructive) {
+            Button("Quit Z-island", role: .destructive) {
                 NSApplication.shared.terminate(self)
             }
             .keyboardShortcut(KeyEquivalent("Q"), modifiers: .command)
@@ -118,7 +118,7 @@ struct LaunchAtLoginToggle: View {
             }
         )) {
             // 待用户到系统设置里允许时，别让对号再骗人，直接说清楚。
-            Label(needsApproval ? "开机自启（待系统允许）" : "开机自启", systemImage: "poweron")
+            Label(needsApproval ? "Launch at Login (waiting for approval)" : "Launch at Login", systemImage: "poweron")
         }
         .onAppear {
             // Re-sync with the system every time the menu opens, in case the
@@ -138,7 +138,7 @@ struct GrantAllPermissionsButton: View {
         Button {
             PermissionsRequester.grantAll()
         } label: {
-            Label("一键授权全部权限", systemImage: "checkmark.shield")
+            Label("Grant All Permissions", systemImage: "checkmark.shield")
         }
     }
 }
@@ -168,10 +168,10 @@ struct LayoutPicker: View {
 
     var body: some View {
         Picker(selection: layout) {
-            Text("默认布局").tag(false)
-            Text("简约布局").tag(true)
+            Text("Default Layout").tag(false)
+            Text("Minimal Layout").tag(true)
         } label: {
-            Label("布局", systemImage: "rectangle.3.group")
+            Label("Layout", systemImage: "rectangle.3.group")
         }
         .pickerStyle(.inline)
     }
@@ -188,7 +188,7 @@ struct ShowMenuBarIconToggle: View {
 
     var body: some View {
         Toggle(isOn: $showMenuBarIcon) {
-            Label("显示菜单栏图标", systemImage: "menubar.rectangle")
+            Label("Show Menu Bar Icon", systemImage: "menubar.rectangle")
         }
     }
 }
@@ -793,19 +793,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let insertionIndex = preferredMenuInsertionIndex(in: mainMenu)
 
-        let accessibilityMenuItem = NSMenuItem(title: "辅助功能", action: nil, keyEquivalent: "")
+        let accessibilityMenuItem = NSMenuItem(title: String(localized: "Accessibility"), action: nil, keyEquivalent: "")
         accessibilityMenuItem.identifier = NSUserInterfaceItemIdentifier("Atoll.Accessibility.Menu")
-        let accessibilitySubmenu = NSMenu(title: "辅助功能")
+        let accessibilitySubmenu = NSMenu(title: String(localized: "Accessibility"))
 
         let requestAccessibility = NSMenuItem(
-            title: "申请辅助功能权限",
+            title: String(localized: "Request Accessibility Access"),
             action: #selector(requestAccessibilityAccess),
             keyEquivalent: ""
         )
         requestAccessibility.target = self
 
         let openAccessibility = NSMenuItem(
-            title: "打开辅助功能设置",
+            title: String(localized: "Open Accessibility Settings"),
             action: #selector(openAccessibilitySettings),
             keyEquivalent: ""
         )
@@ -816,26 +816,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         accessibilityMenuItem.submenu = accessibilitySubmenu
         mainMenu.insertItem(accessibilityMenuItem, at: insertionIndex)
 
-        let permissionsMenuItem = NSMenuItem(title: "权限", action: nil, keyEquivalent: "")
+        let permissionsMenuItem = NSMenuItem(title: String(localized: "Permissions"), action: nil, keyEquivalent: "")
         permissionsMenuItem.identifier = NSUserInterfaceItemIdentifier("Atoll.Permissions.Menu")
-        let permissionsSubmenu = NSMenu(title: "权限")
+        let permissionsSubmenu = NSMenu(title: String(localized: "Permissions"))
 
         let requestFullDisk = NSMenuItem(
-            title: "申请完全磁盘访问权限",
+            title: String(localized: "Request Full Disk Access"),
             action: #selector(requestFullDiskAccess),
             keyEquivalent: ""
         )
         requestFullDisk.target = self
 
         let openFullDisk = NSMenuItem(
-            title: "打开完全磁盘访问权限设置",
+            title: String(localized: "Open Full Disk Access Settings"),
             action: #selector(openFullDiskAccessSettings),
             keyEquivalent: ""
         )
         openFullDisk.target = self
 
         let openDevTools = NSMenuItem(
-            title: "打开开发者工具设置",
+            title: String(localized: "Open Developer Tools Settings"),
             action: #selector(openDeveloperToolsSettingsFromMenu),
             keyEquivalent: ""
         )
@@ -848,21 +848,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         permissionsMenuItem.submenu = permissionsSubmenu
         mainMenu.insertItem(permissionsMenuItem, at: insertionIndex + 1)
 
-        let toolsMenuItem = NSMenuItem(title: "工具", action: nil, keyEquivalent: "")
+        let toolsMenuItem = NSMenuItem(title: String(localized: "Tools"), action: nil, keyEquivalent: "")
         toolsMenuItem.identifier = NSUserInterfaceItemIdentifier("Atoll.Tools.Menu")
-        let toolsSubmenu = NSMenu(title: "工具")
+        let toolsSubmenu = NSMenu(title: String(localized: "Tools"))
 
-        let loggingLevelItem = NSMenuItem(title: "日志级别", action: nil, keyEquivalent: "")
+        let loggingLevelItem = NSMenuItem(title: String(localized: "Log Level"), action: nil, keyEquivalent: "")
         loggingLevelItem.identifier = NSUserInterfaceItemIdentifier("Atoll.Tools.LoggingLevel")
-        let loggingLevelSubmenu = NSMenu(title: "日志级别")
+        let loggingLevelSubmenu = NSMenu(title: String(localized: "Log Level"))
         
         // Dispatched by tag, so the titles are safe to localize.
         let levels: [(String, LogLevel)] = [
-            ("不记录", .none),
-            ("错误", .error),
-            ("警告", .warning),
-            ("信息", .info),
-            ("调试", .debug)
+            ("None", .none),
+            ("Error", .error),
+            ("Warning", .warning),
+            ("Info", .info),
+            ("Debug", .debug)
         ]
         
         for (title, level) in levels {
@@ -877,7 +877,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         toolsSubmenu.addItem(NSMenuItem.separator())
         
-        let exportLogsItem = NSMenuItem(title: "导出日志", action: #selector(exportLogs), keyEquivalent: "")
+        let exportLogsItem = NSMenuItem(title: String(localized: "Export Logs"), action: #selector(exportLogs), keyEquivalent: "")
         exportLogsItem.target = self
         toolsSubmenu.addItem(exportLogsItem)
 

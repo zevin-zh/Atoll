@@ -66,7 +66,7 @@ struct CheckForUpdatesButton: View {
         Button {
             updater.checkForUpdates()
         } label: {
-            Label("检查更新…", systemImage: "arrow.triangle.2.circlepath")
+            Label("Check for Updates…", systemImage: "arrow.triangle.2.circlepath")
         }
         .disabled(!viewModel.canCheckForUpdates)
     }
