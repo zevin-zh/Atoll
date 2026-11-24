@@ -282,10 +282,32 @@ class BluetoothAudioManager: ObservableObject {
     }
 
     /// Starts polling for device connection changes (fallback mechanism)
+    ///
+    /// The distributed notifications in `setupBluetoothObservers()` are the
+    /// primary path — they refresh immediately. This poll only exists because
+    /// those notifications are not guaranteed, so it backs off while nothing is
+    /// connected: every `enumerateConnectedAudioDevices` call is a synchronous
+    /// IOBluetooth IPC round-trip, and doing that every 3s forever costs real
+    /// wake-ups for a device that is nowhere to be found.
     private func startPollingForChanges() {
-        pollingTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
-            self?.checkForDeviceChanges()
+        scheduleNextDevicePoll()
+    }
+
+    /// 3s while audio devices are connected (fast disconnect detection), 20s when
+    /// the list is empty. Chained one-shot timers instead of a repeating one so
+    /// the interval can adapt, plus tolerance so the kernel can batch the wake-up.
+    private func scheduleNextDevicePoll() {
+        pollingTimer?.invalidate()
+
+        let interval: TimeInterval = connectedDevices.isEmpty ? 20.0 : 3.0
+        let timer = Timer(timeInterval: interval, repeats: false) { [weak self] _ in
+            guard let self else { return }
+            self.checkForDeviceChanges()
+            self.scheduleNextDevicePoll()
         }
+        timer.tolerance = interval * 0.2
+        RunLoop.main.add(timer, forMode: .common)
+        pollingTimer = timer
     }
 
     /// Checks for device connection/disconnection changes

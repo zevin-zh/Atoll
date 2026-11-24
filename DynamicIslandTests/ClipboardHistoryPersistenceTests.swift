@@ -339,3 +339,37 @@ final class ClipboardHistoryPersistenceTests: XCTestCase {
         UserDefaults.standard.removeObject(forKey: historyKey)
     }
 }
+
+/// 分类筛选是纯映射逻辑，出错的话界面会「分类里明明是空的但计数不为零」，
+/// 所以在这里把每种类型落在哪个分类钉死。
+final class ClipboardCategoryTests: XCTestCase {
+    func testCategoryMatching() {
+        XCTAssertTrue(ClipboardCategory.all.matches(.text))
+        XCTAssertTrue(ClipboardCategory.all.matches(.unknown))
+
+        XCTAssertTrue(ClipboardCategory.text.matches(.text))
+        XCTAssertTrue(ClipboardCategory.text.matches(.rtf), "富文本按文本算")
+        XCTAssertFalse(ClipboardCategory.text.matches(.url))
+
+        XCTAssertTrue(ClipboardCategory.link.matches(.url))
+        XCTAssertFalse(ClipboardCategory.link.matches(.text), "纯文本链接在采集时已经标成 .url")
+
+        XCTAssertTrue(ClipboardCategory.image.matches(.image))
+        XCTAssertFalse(ClipboardCategory.image.matches(.file))
+
+        XCTAssertTrue(ClipboardCategory.file.matches(.file))
+        XCTAssertFalse(ClipboardCategory.file.matches(.image))
+    }
+
+    func testEveryItemTypeLandsInAtMostOneFilterCategory() {
+        for type in ClipboardItemType.allCases {
+            let matched = ClipboardCategory.allCases.filter { $0 != .all && $0.matches(type) }
+            switch type {
+            case .unknown:
+                XCTAssertTrue(matched.isEmpty, "unknown 只应出现在「全部」里")
+            default:
+                XCTAssertEqual(matched.count, 1, "\(type) 应恰好落在一个分类里")
+            }
+        }
+    }
+}

@@ -41,48 +41,41 @@ struct IdleAnimationView: View {
 /// Internal view that renders the actual animation content
 private struct AnimationContentView: View {
     let animation: CustomIdleAnimation
-    
+
+    /// 「减弱动态效果」下不跑循环 idel 动画：把 Lottie 冻在同一帧上。
+    /// LottieUI 对 `value > 0` 的处理就是“停止播放并停在这个进度”。
+    /// 这不只是体验问题——循环动画会让屏幕一直保持 60/120Hz 的唤醒。
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         let config = animation.getTransformConfig()
-        
-        // Debug logging
-        let _ = print("🎨 [IdleAnimationView] Rendering animation: \(animation.name)")
-        let _ = print("🎨 [IdleAnimationView] Config: scale=\(config.scale), offset=(\(config.offsetX), \(config.offsetY)), opacity=\(config.opacity)")
-        
-        switch animation.source {
-        case .lottieFile(let url):
-            LottieView(state: LUStateData(
-                type: .loadedFrom(url),
+
+        LottieView(
+            state: LUStateData(
+                type: .loadedFrom(animation.source.url),
                 speed: animation.speed,
                 loopMode: config.loopMode.lottieLoopMode
-            ))
-            .id(animation.id)  // Force reload when animation changes
-            .frame(
-                width: config.cropWidth * config.scale,
-                height: config.cropHeight * config.scale
-            )
-            .offset(x: config.offsetX, y: config.offsetY)
-            .rotationEffect(.degrees(config.rotation))
-            .opacity(config.opacity)
-            .padding(.bottom, config.paddingBottom)
-            .clipped()
-            
-        case .lottieURL(let url):
-            LottieView(state: LUStateData(
-                type: .loadedFrom(url),
-                speed: animation.speed,
-                loopMode: config.loopMode.lottieLoopMode
-            ))
-            .id(animation.id)  // Force reload when animation changes
-            .frame(
-                width: config.cropWidth * config.scale,
-                height: config.cropHeight * config.scale
-            )
-            .offset(x: config.offsetX, y: config.offsetY)
-            .rotationEffect(.degrees(config.rotation))
-            .opacity(config.opacity)
-            .padding(.bottom, config.paddingBottom)
-            .clipped()
+            ),
+            value: reduceMotion ? 0.5 : 0
+        )
+        .id(animation.id)  // Force reload when animation changes
+        .frame(
+            width: config.cropWidth * config.scale,
+            height: config.cropHeight * config.scale
+        )
+        .offset(x: config.offsetX, y: config.offsetY)
+        .rotationEffect(.degrees(config.rotation))
+        .opacity(config.opacity)
+        .padding(.bottom, config.paddingBottom)
+        .clipped()
+    }
+}
+
+private extension AnimationSource {
+    var url: URL {
+        switch self {
+        case .lottieFile(let url), .lottieURL(let url):
+            return url
         }
     }
 }

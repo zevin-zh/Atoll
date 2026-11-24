@@ -34,6 +34,11 @@ struct NotchClipboardView: View {
     @State private var isSuppressing = false
     @State private var showClearHistoryAlert = false
     @State private var autoCloseToken = UUID()
+    /// 标题行实测高度；列表靠它让开位置（空状态不用，它走 offset 对齐）。
+    @State private var headerHeight: CGFloat = 44
+    /// 分类筛选。写进 Defaults，岛收起再打开还停在原来的分类上。
+    @Default(.clipboardCategory) private var category
+
 
     /// Minimum card width; drives how many columns the adaptive grid shows.
     var minCardWidth: CGFloat = 200
@@ -41,6 +46,11 @@ struct NotchClipboardView: View {
     /// adaptive minimum would collapse to a single column). nil = adaptive by width.
     var fixedColumns: Int? = nil
 
+    /// 当前分类下的条目；`.all` 不筛选。
+    private var filteredHistory: [ClipboardItem] {
+        guard category != .all else { return clipboardManager.clipboardHistory }
+        return clipboardManager.clipboardHistory.filter { category.matches($0.type) }
+    }
     private var columns: [GridItem] {
         if let n = fixedColumns {
             return Array(repeating: GridItem(.flexible(), spacing: 8), count: max(1, n))
@@ -48,43 +58,54 @@ struct NotchClipboardView: View {
         return [GridItem(.adaptive(minimum: minCardWidth, maximum: .infinity), spacing: 8)]
     }
 
-    var body: some View {
-        VStack(spacing: 0) {
-            header
+    /// 空状态靠上下等分居中（不额外加 padding）：实测加 36pt 反而会把中心
+    /// 往下顶 18pt，跟暂存架那条线错开。
 
-            if clipboardManager.clipboardHistory.isEmpty {
-                emptyState
-            } else {
-                ScrollView {
-                    LazyVGrid(columns: columns, spacing: 8) {
-                        ForEach(clipboardManager.clipboardHistory) { item in
-                            ClipboardGridCard(
-                                item: item,
-                                isHovered: hoveredItemId == item.id,
-                                justCopied: justCopiedId == item.id,
-                                onDelete: { clipboardManager.deleteItem(item) }
-                            )
-                            .contentShape(Rectangle())
-                            .clipboardDraggable(item)
-                            .onHover { hovering in
-                                // Only clear on exit if the id still refers to this card:
-                                // entering the next card can fire `true` before this card's
-                                // `false`, and an unconditional nil would wipe that entry.
-                                if hovering { hoveredItemId = item.id }
-                                else if hoveredItemId == item.id { hoveredItemId = nil }
+    var body: some View {
+        ZStack(alignment: .top) {
+            Group {
+                if clipboardManager.clipboardHistory.isEmpty {
+                    emptyState
+                } else if filteredHistory.isEmpty {
+                    filteredEmptyState
+                } else {
+                    ScrollView {
+                        LazyVGrid(columns: columns, spacing: 8) {
+                            ForEach(filteredHistory) { item in
+                                ClipboardGridCard(
+                                    item: item,
+                                    isHovered: hoveredItemId == item.id,
+                                    justCopied: justCopiedId == item.id,
+                                    onDelete: { clipboardManager.deleteItem(item) }
+                                )
+                                .contentShape(Rectangle())
+                                .clipboardDraggable(item)
+                                .onHover { hovering in
+                                    // Only clear on exit if the id still refers to this card:
+                                    // entering the next card can fire `true` before this card's
+                                    // `false`, and an unconditional nil would wipe that entry.
+                                    if hovering { hoveredItemId = item.id }
+                                    else if hoveredItemId == item.id { hoveredItemId = nil }
+                                }
+                                .onTapGesture { copy(item) }
+                                .accessibilityElement(children: .combine)
+                                .accessibilityLabel("\(item.type.displayName): \(item.preview)")
+                                .accessibilityAddTraits(.isButton)
+                                .accessibilityAction { copy(item) }
+                                .accessibilityAction(named: Text("Delete")) { clipboardManager.deleteItem(item) }
                             }
-                            .onTapGesture { copy(item) }
-                            .accessibilityElement(children: .combine)
-                            .accessibilityLabel("\(item.type.displayName): \(item.preview)")
-                            .accessibilityAddTraits(.isButton)
-                            .accessibilityAction { copy(item) }
-                            .accessibilityAction(named: Text("Delete")) { clipboardManager.deleteItem(item) }
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 20)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
+                    // 列表得让开标题行，否则卡片会滑到 chip 下面。
+                    .padding(.top, headerHeight)
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            header
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { headerHeight = $0 }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onHover { updateSuppression(for: $0) }
@@ -153,23 +174,44 @@ struct NotchClipboardView: View {
         .padding(16)
         .frame(maxWidth: 320)
         .background {
+            // 不透明：半透明时后面的空状态/卡片会透上来，看着像字叠字。
+            // 比岛底黑略亮一点，靠颜色差 + 描边把卡片从背景里拎出来。
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(.black.opacity(0.82))
+                .fill(Color(white: 0.11))
         }
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .strokeBorder(.white.opacity(0.12), lineWidth: 1)
+                .strokeBorder(.white.opacity(0.14), lineWidth: 1)
         }
+        .shadow(color: .black.opacity(0.5), radius: 14, y: 6)
         .padding(12)
         .transition(.opacity.combined(with: .scale(scale: 0.96)))
     }
 
+    /// 标题、分类 chip、清空按钮共处一行。
+    ///
+    /// 以前 chip 另起一行，内容区被压低 ~36pt，空状态就跟暂存架页对不齐了
+    /// （展开态整块只有 200pt）。并到一行以后内容区起点与暂存架一致。
     private var header: some View {
-        HStack {
+        HStack(spacing: 12) {
             Text("Clipboard")
                 .font(.system(size: 16, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white)
-            Spacer()
+                .fixedSize()
+
+            if !clipboardManager.clipboardHistory.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(ClipboardCategory.allCases) { chip in
+                            categoryChip(chip)
+                        }
+                    }
+                }
+                .frame(height: 24)
+            }
+
+            Spacer(minLength: 8)
+
             if !clipboardManager.clipboardHistory.isEmpty {
                 Button(action: { showClearHistoryAlert = true }) {
                     Image(systemName: "trash")
@@ -181,6 +223,7 @@ struct NotchClipboardView: View {
                         .clipShape(Circle())
                 }
                 .buttonStyle(PlainButtonStyle())
+                .accessibilityLabel(Text("Clear History"))
             }
         }
         .padding(.horizontal, 20)
@@ -188,17 +231,72 @@ struct NotchClipboardView: View {
         .padding(.bottom, 12)
     }
 
-    private var emptyState: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "doc.on.clipboard")
-                .font(.system(size: 32))
-                .foregroundStyle(.white.opacity(0.28))
-            Text("No copies yet")
-                .font(.headline)
-                .foregroundStyle(.white.opacity(0.6))
+
+    private func categoryChip(_ chip: ClipboardCategory) -> some View {
+        let isSelected = category == chip
+        let count = categoryCount(chip)
+
+        return Button {
+            withAnimation(Motion.respected(.easeInOut(duration: 0.15))) {
+                category = chip
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: chip.icon)
+                    .font(.system(size: 10, weight: .semibold))
+                Text(chip.title)
+                    .font(.system(size: 11, weight: .medium))
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.system(size: 10, weight: .semibold))
+                        .opacity(0.65)
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Capsule().fill(isSelected ? Color.white.opacity(0.9) : Color.white.opacity(0.1)))
+            .foregroundStyle(isSelected ? Color.black : Color.white.opacity(0.75))
         }
-        // 空状态必须撑住高度：内容为 0 时岛背景会跟着塌成一团甚至消失。
-        .frame(maxWidth: .infinity, minHeight: 140, maxHeight: .infinity)
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(chip.title))
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+    }
+
+    private func categoryCount(_ chip: ClipboardCategory) -> Int {
+        guard chip != .all else { return clipboardManager.clipboardHistory.count }
+        return clipboardManager.clipboardHistory.reduce(into: 0) { total, item in
+            if chip.matches(item.type) { total += 1 }
+        }
+    }
+
+    /// 该分类下没有内容（历史里其实是有的）。
+    ///
+    /// 不给 minHeight：展开态高度固定 200pt，头部 + 分类条已占掉约 76pt，
+    /// 再要求 140pt 会把内容顶出窗口底部（上一个版本的「全部」按钮就被裁掉一半）。
+    /// 回到「全部」不需要额外按钮 —— 上面那排 chip 就在旁边。
+    private var filteredEmptyState: some View {
+        emptyStateContent(message: "No items in this category")
+    }
+
+    private var emptyState: some View {
+        emptyStateContent(message: "No copies yet")
+    }
+
+    /// 空状态的唯一实现：只一行字，不画图标。
+    ///
+    /// 位置：标题行占掉顶部一块，肉眼要求的「居中」是居中在标题行下方剩下的空间里
+    /// （实测面板 0..210，标题内容到 85，目标中心 ~147）。
+    /// SwiftUI 给这个视图的高度比可见面板大，直接 `maxHeight: .infinity` 居中的话
+    /// 会落在 121 左右、贴着标题行，所以用 offset 补下去。
+    private static let emptyStateVerticalOffset: CGFloat = 23
+
+    private func emptyStateContent(message: LocalizedStringKey) -> some View {
+        Text(message)
+            .foregroundStyle(.gray)
+            .font(.system(.title3, design: .rounded))
+            .fontWeight(.medium)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .offset(y: Self.emptyStateVerticalOffset)
     }
 
     private func copy(_ item: ClipboardItem) {
@@ -272,6 +370,7 @@ struct ClipboardGridCard: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 .help("Delete this item")
+                .accessibilityLabel(Text("Delete this item"))
                 .padding(4)
                 .transition(.scale.combined(with: .opacity))
             }

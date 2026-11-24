@@ -204,6 +204,50 @@ enum ClipboardItemType: String, CaseIterable, Codable {
     }
 }
 
+/// 剪贴板分类：给列表做筛选用。
+///
+/// 比底层 `ClipboardItemType` 更贴近用户认知——富文本归到文本、
+/// `unknown` 只出现在「全部」里。`all` 本身不筛选。
+enum ClipboardCategory: String, CaseIterable, Codable, Defaults.Serializable, Identifiable {
+    case all
+    case text
+    case link
+    case image
+    case file
+
+    var id: String { rawValue }
+
+    var title: LocalizedStringKey {
+        switch self {
+        case .all: return "All"
+        case .text: return "Text"
+        case .link: return "URL"
+        case .image: return "Image"
+        case .file: return "File"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .all: return "square.grid.2x2"
+        case .text: return "doc.text"
+        case .link: return "link"
+        case .image: return "photo"
+        case .file: return "doc"
+        }
+    }
+
+    func matches(_ type: ClipboardItemType) -> Bool {
+        switch self {
+        case .all: return true
+        case .text: return type == .text || type == .rtf
+        case .link: return type == .url
+        case .image: return type == .image
+        case .file: return type == .file
+        }
+    }
+}
+
 class ClipboardManager: ObservableObject {
     static let shared = ClipboardManager()
     
@@ -397,9 +441,13 @@ class ClipboardManager: ObservableObject {
         guard !isMonitoring else { return }
         
         isMonitoring = true
-        timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in
             self?.checkClipboard()
         }
+        // 剪贴板没有公开的变更通知，只能轮询；给个大容差让系统合并唤醒。
+        timer.tolerance = 0.4
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
     }
     
     func stopMonitoring() {

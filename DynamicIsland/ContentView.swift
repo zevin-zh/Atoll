@@ -102,6 +102,9 @@ struct ContentView: View {
     /// 装上之后就不再需要 100ms 的常开轮询——鼠标不动就没有回调。
     @State private var pointerMonitor: Any?
     @State private var pointerLocalMonitor: Any?
+    /// 指针事件合并：是否已有一个待执行的 poll，以及上一次 poll 的时间戳。
+    @State private var hoverPollPending: Bool = false
+    @State private var lastPointerPollAt: CFTimeInterval = 0
     @State private var isHovering: Bool = false
     @State private var lastHapticTime: Date = Date()
     @State private var hoverClickMonitor: Any?
@@ -953,17 +956,41 @@ struct ContentView: View {
         pointerMonitor = NSEvent.addGlobalMonitorForEvents(
             matching: [.mouseMoved, .leftMouseDragged]
         ) { _ in
-            Task { @MainActor in pollHover() }
+            scheduleHoverPoll()
         }
 
         // 本地：指针落在我们自己的窗口上时全局监听收不到事件。
         pointerLocalMonitor = NSEvent.addLocalMonitorForEvents(
             matching: [.mouseMoved, .leftMouseDragged]
         ) { event in
-            Task { @MainActor in pollHover() }
+            scheduleHoverPoll()
             return event
         }
     }
+
+    /// 鼠标移动事件按硬件刷新率触发（ProMotion 屏上 120Hz）。以前每个事件都
+    /// 起一个 Task 跳主线程、再从头读一遍拖拽粘贴板；现在合并成“最多一个
+    /// 待执行的 poll”，再按 30Hz 上限截断，并且保证连发结束时最后一个事件
+    /// 一定会被处理（尾部补一次），不会有事件被丢掉导致悬停不响应。
+    private func scheduleHoverPoll() {
+        guard !hoverPollPending else { return }
+
+        let elapsed = CACurrentMediaTime() - lastPointerPollAt
+        let wait = max(0, Self.pointerPollMinimumInterval - elapsed)
+        hoverPollPending = true
+
+        Task { @MainActor in
+            if wait > 0 {
+                try? await Task.sleep(nanoseconds: UInt64(wait * 1_000_000_000))
+            }
+            hoverPollPending = false
+            lastPointerPollAt = CACurrentMediaTime()
+            pollHover()
+        }
+    }
+
+    /// 30Hz 对悬停检测足够，再高也看不出差别。
+    private static let pointerPollMinimumInterval: CFTimeInterval = 1.0 / 30.0
 
     private func stopPointerMonitor() {
         if let pointerMonitor {

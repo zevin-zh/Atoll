@@ -17,11 +17,9 @@
 		7E6118142E24071E0050006C /* LaunchAtLogin in Frameworks */ = {isa = PBXBuildFile; productRef = 14D032192C68F32E0096E6A1 /* LaunchAtLogin */; };
 		7E6118152E24071E0050006C /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 14D0321C2C68F3350096E6A1 /* Sparkle */; };
 		7E6118162E24071E0050006C /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = B18654382C6F4990000B926A /* KeyboardShortcuts */; };
-		7E6118172E24071E0050006C /* Collections in Frameworks */ = {isa = PBXBuildFile; productRef = 9A987A0F2C73CA8D005CA465 /* Collections */; };
 		7E6118192E24071E0050006C /* Defaults in Frameworks */ = {isa = PBXBuildFile; productRef = B19016212CC15B3D00E3F12E /* Defaults */; };
 		7E61181A2E24071E0050006C /* SwiftUIIntrospect in Frameworks */ = {isa = PBXBuildFile; productRef = B1628B912CC260C0003D8DF3 /* SwiftUIIntrospect */; };
 		7E61181B2E24071E0050006C /* LottieUI in Frameworks */ = {isa = PBXBuildFile; productRef = B194240A2CD10017003E5DC2 /* LottieUI */; };
-		7E61181C2E24071E0050006C /* MacroVisionKit in Frameworks */ = {isa = PBXBuildFile; productRef = 146BC4362D366E9B0047C66A /* MacroVisionKit */; };
 		7E8840D72E9A346700C5CB8C /* Dog waiting.json in Resources */ = {isa = PBXBuildFile; fileRef = 7E8840D62E9A346700C5CB8C /* Dog waiting.json */; };
 		7E8840D92E9A347000C5CB8C /* Moody Dog.json in Resources */ = {isa = PBXBuildFile; fileRef = 7E8840D82E9A347000C5CB8C /* Moody Dog.json */; };
 		7E8840DB2E9A347800C5CB8C /* Orange Cat Peeping.json in Resources */ = {isa = PBXBuildFile; fileRef = 7E8840DA2E9A347800C5CB8C /* Orange Cat Peeping.json */; };
@@ -146,11 +144,9 @@
 				7E1ADF1D2EA209B1001DA867 /* SkyLightWindow in Frameworks */,
 				7EE1D73F2E6B1E1200997219 /* IOKit.framework in Frameworks */,
 				7EE1D73D2E6B1E0B00997219 /* ApplicationServices.framework in Frameworks */,
-				7E61181C2E24071E0050006C /* MacroVisionKit in Frameworks */,
 				7E61181B2E24071E0050006C /* LottieUI in Frameworks */,
 				7E61181A2E24071E0050006C /* SwiftUIIntrospect in Frameworks */,
 				7E6118192E24071E0050006C /* Defaults in Frameworks */,
-				7E6118172E24071E0050006C /* Collections in Frameworks */,
 				7E6118162E24071E0050006C /* KeyboardShortcuts in Frameworks */,
 				7E6118152E24071E0050006C /* Sparkle in Frameworks */,
 				7E6118142E24071E0050006C /* LaunchAtLogin in Frameworks */,
@@ -283,11 +279,9 @@
 				14D032192C68F32E0096E6A1 /* LaunchAtLogin */,
 				14D0321C2C68F3350096E6A1 /* Sparkle */,
 				B18654382C6F4990000B926A /* KeyboardShortcuts */,
-				9A987A0F2C73CA8D005CA465 /* Collections */,
 				B19016212CC15B3D00E3F12E /* Defaults */,
 				B1628B912CC260C0003D8DF3 /* SwiftUIIntrospect */,
 				B194240A2CD10017003E5DC2 /* LottieUI */,
-				146BC4362D366E9B0047C66A /* MacroVisionKit */,
 				7E61181E2E24071E0050006C /* SkyLightWindow */,
 			);
 			productName = "Z-island";
@@ -324,17 +318,13 @@
 			mainGroup = F54406DE2CD4987A00C7AFD9;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				F54407082CD4A23F00C7AFD9 /* XCRemoteSwiftPackageReference "swift-collections" */,
 				14D032182C68F32E0096E6A1 /* XCRemoteSwiftPackageReference "LaunchAtLogin-Modern" */,
 				14D0321B2C68F3350096E6A1 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				B18654372C6F4990000B926A /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
-				9A987A112C73CAA1005CA465 /* XCRemoteSwiftPackageReference "Pow" */,
 				B19016202CC15B3D00E3F12E /* XCRemoteSwiftPackageReference "Defaults" */,
 				B1628B902CC260C0003D8DF3 /* XCRemoteSwiftPackageReference "swiftui-introspect" */,
 				B19424072CD0DB52003E5DC2 /* XCRemoteSwiftPackageReference "LottieUI" */,
-				146BC4352D366E9B0047C66A /* XCRemoteSwiftPackageReference "MacroVisionKit" */,
 				7E61181F2E24071E0050006C /* XCRemoteSwiftPackageReference "SkyLightWindow" */,
-				7E09D5962EB7B497005AF41D /* XCRemoteSwiftPackageReference "open-meteo" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = F54406E82CD4987A00C7AFD9 /* Products */;
@@ -797,14 +787,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		146BC4352D366E9B0047C66A /* XCRemoteSwiftPackageReference "MacroVisionKit" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/TheBoredTeam/MacroVisionKit";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.1.0;
-			};
-		};
 		14D032182C68F32E0096E6A1 /* XCRemoteSwiftPackageReference "LaunchAtLogin-Modern" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sindresorhus/LaunchAtLogin-Modern";
@@ -821,28 +803,12 @@
 				minimumVersion = 2.6.4;
 			};
 		};
-		7E09D5962EB7B497005AF41D /* XCRemoteSwiftPackageReference "open-meteo" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/open-meteo/open-meteo";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.4.16;
-			};
-		};
 		7E61181F2E24071E0050006C /* XCRemoteSwiftPackageReference "SkyLightWindow" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/Lakr233/SkyLightWindow";
 			requirement = {
 				branch = main;
 				kind = branch;
-			};
-		};
-		9A987A112C73CAA1005CA465 /* XCRemoteSwiftPackageReference "Pow" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/EmergeTools/Pow";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.0.4;
 			};
 		};
 		B1628B902CC260C0003D8DF3 /* XCRemoteSwiftPackageReference "swiftui-introspect" */ = {
@@ -877,22 +843,9 @@
 				kind = branch;
 			};
 		};
-		F54407082CD4A23F00C7AFD9 /* XCRemoteSwiftPackageReference "swift-collections" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/apple/swift-collections.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.1.4;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		146BC4362D366E9B0047C66A /* MacroVisionKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 146BC4352D366E9B0047C66A /* XCRemoteSwiftPackageReference "MacroVisionKit" */;
-			productName = MacroVisionKit;
-		};
 		14D032192C68F32E0096E6A1 /* LaunchAtLogin */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 14D032182C68F32E0096E6A1 /* XCRemoteSwiftPackageReference "LaunchAtLogin-Modern" */;
@@ -907,11 +860,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7E61181F2E24071E0050006C /* XCRemoteSwiftPackageReference "SkyLightWindow" */;
 			productName = SkyLightWindow;
-		};
-		9A987A0F2C73CA8D005CA465 /* Collections */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = F54407082CD4A23F00C7AFD9 /* XCRemoteSwiftPackageReference "swift-collections" */;
-			productName = Collections;
 		};
 		B1628B912CC260C0003D8DF3 /* SwiftUIIntrospect */ = {
 			isa = XCSwiftPackageProductDependency;

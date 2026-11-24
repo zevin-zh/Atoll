@@ -88,11 +88,6 @@ struct CustomIdleAnimation: Codable, Hashable, Equatable, Defaults.Serializable,
     /// Get the effective transform config (override or default)
     func getTransformConfig() -> AnimationTransformConfig {
         let override = Defaults[.animationTransformOverrides][id.uuidString]
-        if let override = override {
-            print("📋 [CustomIdleAnimation] Found override for '\(name)': \(override)")
-        } else {
-            print("📋 [CustomIdleAnimation] No override for '\(name)', using default")
-        }
         return override ?? .default
     }
 }
@@ -483,6 +478,8 @@ extension Defaults.Keys {
         // MARK: General
     static let updateChannel = Key<UpdateChannel>("updateChannel", default: .stable)
     static let logLevel = Key<LogLevel>("logLevel", default: .none)
+    /// 剪贴板列表的分类筛选（全部/文本/链接/图片/文件）。
+    static let clipboardCategory = Key<ClipboardCategory>("clipboardCategory", default: .all)
     static let menubarIcon = Key<Bool>("menubarIcon", default: true)
     static let showOnAllDisplays = Key<Bool>("showOnAllDisplays", default: false)
     static let automaticallySwitchDisplay = Key<Bool>("automaticallySwitchDisplay", default: true)

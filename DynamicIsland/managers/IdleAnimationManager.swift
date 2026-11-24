@@ -41,12 +41,8 @@ class IdleAnimationManager {
     
     /// Load bundled animations from the LottieAnimations folder
     func initializeDefaultAnimations() {
-        var animations: [CustomIdleAnimation] = []
-        
-        // Load bundled Lottie files
-        if let bundledAnimations = loadBundledAnimations() {
-            animations.append(contentsOf: bundledAnimations)
-        }
+        let bundled = loadBundledAnimations() ?? []
+        let bundledByName = Dictionary(bundled.map { ($0.name, $0) }, uniquingKeysWith: { first, _ in first })
         
         // Get existing animations
         var existing = Defaults[.customIdleAnimations]
@@ -59,41 +55,61 @@ class IdleAnimationManager {
             return false
         }
         
+        // Re-point every built-in entry at the *current* bundle location. Stored
+        // entries carry an absolute URL, so renaming or moving the app
+        // (Atoll → Z-island) leaves it dangling and the animation renders nothing.
+        existing = existing.map { animation in
+            guard animation.isBuiltIn, let fresh = bundledByName[animation.name] else { return animation }
+            var updated = animation
+            updated.source = fresh.source
+            return updated
+        }
+        
         if existing.isEmpty {
             // First launch - set everything
-            Defaults[.customIdleAnimations] = animations
-            Defaults[.selectedIdleAnimation] = animations.first
-            print("✅ [IdleAnimationManager] First launch: Initialized with \(animations.count) animations")
+            Defaults[.customIdleAnimations] = bundled
+            Defaults[.selectedIdleAnimation] = bundled.first
+            print("✅ [IdleAnimationManager] First launch: Initialized with \(bundled.count) animations")
         } else {
             // Subsequent launch - ensure all bundled animations are present
-            let existingNames = Set(existing.filter { $0.isBuiltIn }.map { $0.name })
-            
-            // Add any missing bundled animations
-            for bundledAnim in animations where bundledAnim.isBuiltIn {
-                if !existingNames.contains(bundledAnim.name) {
-                    existing.insert(bundledAnim, at: existing.firstIndex(where: { !$0.isBuiltIn }) ?? existing.count)
-                    print("➕ [IdleAnimationManager] Added missing bundled animation: \(bundledAnim.name)")
-                }
+            for bundledAnim in bundled where !existing.contains(where: { $0.isBuiltIn && $0.name == bundledAnim.name }) {
+                existing.insert(bundledAnim, at: existing.firstIndex(where: { !$0.isBuiltIn }) ?? existing.count)
+                print("➕ [IdleAnimationManager] Added missing bundled animation: \(bundledAnim.name)")
             }
             
             Defaults[.customIdleAnimations] = existing
             
-            // If current selection was the old built-in face (no longer valid), select first available
+            // Validate the selection against the refreshed list, then confirm the
+            // file it points at still exists. Covers the legacy face, a renamed
+            // bundle, and a user-imported file that has since been deleted.
             if let selected = Defaults[.selectedIdleAnimation] {
-                let isValid: Bool
-                switch selected.source {
-                case .lottieFile(let url):
-                    isValid = url.absoluteString != "builtin://face"
-                case .lottieURL:
-                    isValid = true
+                let refreshed = existing.first {
+                    $0.id == selected.id || ($0.isBuiltIn && selected.isBuiltIn && $0.name == selected.name)
                 }
-                if !isValid {
-                    Defaults[.selectedIdleAnimation] = existing.first
-                    print("🔄 [IdleAnimationManager] Migrated selection from legacy face to: \(existing.first?.name ?? "nil")")
+                
+                if let refreshed, Self.isPlayable(refreshed) {
+                    if refreshed != selected {
+                        Defaults[.selectedIdleAnimation] = refreshed
+                        print("🔄 [IdleAnimationManager] Re-pointed selection to bundled copy: \(refreshed.name)")
+                    }
+                } else {
+                    let fallback = existing.first(where: Self.isPlayable)
+                    Defaults[.selectedIdleAnimation] = fallback
+                    print("🔄 [IdleAnimationManager] Selection '\(selected.name)' is no longer playable, fell back to: \(fallback?.name ?? "nil")")
                 }
             }
             
             print("✅ [IdleAnimationManager] Subsequent launch: \(existing.count) total animations")
+        }
+    }
+    
+    /// An animation is playable when its backing file still exists (or it is remote).
+    static func isPlayable(_ animation: CustomIdleAnimation) -> Bool {
+        switch animation.source {
+        case .lottieFile(let url):
+            return FileManager.default.fileExists(atPath: url.path)
+        case .lottieURL:
+            return true
         }
     }
     

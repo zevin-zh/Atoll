@@ -197,6 +197,7 @@ struct LocalSendDevicePickerView: View {
                     .buttonStyle(.plain)
                     .disabled(localSend.isRefreshing)
                     .help("Refresh devices")
+                    .accessibilityLabel(Text("Refresh devices"))
                     
                     // Close button
                     Button {
@@ -209,6 +210,7 @@ struct LocalSendDevicePickerView: View {
                             .background(Circle().fill(Color.white.opacity(0.1)))
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(Text("Close"))
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
