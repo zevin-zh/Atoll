@@ -412,7 +412,7 @@ struct InlineHUD: View {
                                     .transition(.opacity.combined(with: .scale))
                                 }
                             }
-                            .animation(.smooth(duration: 0.2), value: value.isZero)
+                            .animation(Motion.respected(.smooth(duration: 0.2)), value: value.isZero)
                         } else {
                             HStack(spacing: 6) {
                                 DraggableProgressBar(value: $value)
@@ -465,7 +465,7 @@ struct InlineHUD: View {
                     .stroke(indicatorColor, style: StrokeStyle(lineWidth: 2.2, lineCap: .round))
             }
             .frame(width: 16, height: 16)
-            .animation(.smooth(duration: 0.18), value: clampedValue)
+            .animation(Motion.respected(.smooth(duration: 0.18)), value: clampedValue)
         }
     }
 
@@ -499,7 +499,7 @@ struct InlineHUD: View {
                     .frame(width: trackWidth * clampedValue, height: trackHeight)
             }
             .frame(width: trackWidth, height: trackHeight)
-            .animation(.smooth(duration: 0.18), value: clampedValue)
+            .animation(Motion.respected(.smooth(duration: 0.18)), value: clampedValue)
         }
     }
 

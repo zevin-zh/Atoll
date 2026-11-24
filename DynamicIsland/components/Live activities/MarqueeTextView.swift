@@ -136,7 +136,7 @@ struct MarqueeText: View {
             guard isAnimating else { return }
             
             // 2. Linear Move
-            withAnimation(.linear(duration: duration)) {
+            withAnimation(Motion.respected(.linear(duration: duration))) {
                 offset = -(textSize.width + Self.loopSpacing) // Text width + spacing
             }
             

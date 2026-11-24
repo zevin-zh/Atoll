@@ -117,7 +117,7 @@ class DynamicIslandViewModel: NSObject, ObservableObject {
         guard let lastCopyDate = ClipboardManager.shared.lastCopiedItemDate else { return }
         guard Date().timeIntervalSince(lastCopyDate) <= clipboardFocusWindow else { return }
         guard coordinator.currentView != .clipboard else { return }
-        withAnimation(.smooth) {
+        withAnimation(Motion.respected(.smooth)) {
             coordinator.currentView = .clipboard
         }
     }
@@ -167,7 +167,7 @@ class DynamicIslandViewModel: NSObject, ObservableObject {
                 guard !Defaults[.enableMinimalisticUI] else { return }
                 let updatedTarget = self.calculateDynamicNotchSize()
                 guard self.notchSize != updatedTarget else { return }
-                withAnimation(.smooth) {
+                withAnimation(Motion.respected(.smooth)) {
                     self.notchSize = updatedTarget
                 }
                 if let delegate = AppDelegate.shared {
@@ -267,7 +267,7 @@ class DynamicIslandViewModel: NSObject, ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) { [weak self] in
             guard let self else { return }
             self.coordinator.firstLaunch = false
-            withAnimation(self.animationLibrary.animation) {
+            withAnimation(Motion.respected(self.animationLibrary.animation)) {
                 self.close()
             }
         }

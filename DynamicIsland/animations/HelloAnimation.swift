@@ -123,9 +123,9 @@ struct HelloAnimation: View {
             shape: { HelloShape() }
         )
         .onAppear {
-            withAnimation(
+            withAnimation(Motion.respected(
                 .easeInOut(duration: 4.0)
-            ) {
+            )) {
                 progress = 1.0
             }
         }

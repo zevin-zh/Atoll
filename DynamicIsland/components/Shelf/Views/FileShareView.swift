@@ -121,7 +121,7 @@ struct FileShareView: View {
                         .scaleEffect(
                             vm.dropZoneTargeting ? 1.06 : 1.0
                         )
-                        .animation(.spring(response: 0.36, dampingFraction: 0.7), value: vm.dropZoneTargeting)
+                        .animation(Motion.respected(.spring(response: 0.36, dampingFraction: 0.7)), value: vm.dropZoneTargeting)
                 }
 
                 Text(selectedProvider.id)
@@ -260,7 +260,7 @@ struct FileShareView: View {
                                     style: StrokeStyle(lineWidth: 3, lineCap: .round)
                                 )
                                 .rotationEffect(.degrees(-90))
-                                .animation(.easeInOut(duration: 0.2), value: localSend.sendProgress)
+                                .animation(Motion.respected(.easeInOut(duration: 0.2)), value: localSend.sendProgress)
 
                             if localSend.sendProgress > 0.99 {
                                 Image(systemName: "checkmark")

@@ -173,7 +173,7 @@ class DynamicIslandViewCoordinator: ObservableObject {
 
     private func handleMinimalisticModeChange(_ isEnabled: Bool) {
         guard isEnabled else { return }
-        withAnimation(.smooth) {
+        withAnimation(Motion.respected(.smooth)) {
             currentView = .shelf
         }
     }
@@ -211,7 +211,7 @@ class DynamicIslandViewCoordinator: ObservableObject {
             updated.accentColor = accentColor
             updated.styleOverride = styleOverride
             updated.targetScreenName = targetScreen?.localizedName
-            withAnimation(.smooth(duration: 0.3)) {
+            withAnimation(Motion.respected(.smooth(duration: 0.3))) {
                 self.sneakPeek = updated
             }
         }
@@ -257,7 +257,7 @@ class DynamicIslandViewCoordinator: ObservableObject {
         autoHideDuration: TimeInterval? = nil
     ) {
         Task { @MainActor in
-            withAnimation(.smooth) {
+            withAnimation(Motion.respected(.smooth)) {
                 self.expandingView.show = status
                 self.expandingView.type = type
                 self.expandingView.value = value

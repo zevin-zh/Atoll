@@ -67,7 +67,7 @@ struct ShelfItemView: View {
             .padding(.horizontal, 5)
             .background(backgroundView)
             .contentShape(Rectangle())
-            .animation(.easeInOut(duration: 0.1), value: debouncedDropTarget)
+            .animation(Motion.respected(.easeInOut(duration: 0.1)), value: debouncedDropTarget)
             .overlay(alignment: .topTrailing) {
                 if isHovering {
                     removeButton
@@ -90,7 +90,7 @@ struct ShelfItemView: View {
                 // because this NSView sits on top of the cell and
                 // intercepts the mouse-tracking `.onHover` would need.
                 onHoverChange: { hovering in
-                    withAnimation(.smooth(duration: 0.15)) {
+                    withAnimation(Motion.respected(.smooth(duration: 0.15))) {
                         isHovering = hovering
                     }
                 },

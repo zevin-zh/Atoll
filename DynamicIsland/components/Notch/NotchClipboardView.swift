@@ -276,7 +276,7 @@ struct ClipboardGridCard: View {
                 .transition(.scale.combined(with: .opacity))
             }
         }
-        .animation(.easeInOut(duration: 0.12), value: isHovered)
+        .animation(Motion.respected(.easeInOut(duration: 0.12)), value: isHovered)
         .task(id: item.id) {
             cachedImage = item.type == .image
                 ? item.getImageData().flatMap(NSImage.init(data:))

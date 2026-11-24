@@ -159,7 +159,7 @@ struct VolumeProgressSection: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .animation(.smooth(duration: 0.2), value: value.isZero)
+        .animation(Motion.respected(.smooth(duration: 0.2)), value: value.isZero)
     }
 }
 
@@ -242,13 +242,13 @@ struct DraggableProgressBar: View {
                 .gesture(
                     DragGesture(minimumDistance: 0)
                         .onChanged { gesture in
-                            withAnimation(.smooth(duration: 0.3)) {
+                            withAnimation(Motion.respected(.smooth(duration: 0.3))) {
                                 isDragging = true
                                 updateValue(gesture: gesture, in: geo)
                             }
                         }
                         .onEnded { _ in
-                            withAnimation(.smooth(duration: 0.3)) {
+                            withAnimation(Motion.respected(.smooth(duration: 0.3))) {
                                 isDragging = false
                             }
                         }
@@ -347,9 +347,9 @@ struct SegmentedProgressContent: View {
                         x: 0, y: 0
                     )
                     .frame(width: barWidth)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: activeCount)
+                    .animation(Motion.respected(.spring(response: 0.3, dampingFraction: 0.8)), value: activeCount)
                     .scaleEffect(glowIndex == index ? 1.15 : 1.0)
-                    .animation(.spring(response: 0.2, dampingFraction: 0.6), value: glowIndex == index)
+                    .animation(Motion.respected(.spring(response: 0.2, dampingFraction: 0.6)), value: glowIndex == index)
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
@@ -405,13 +405,13 @@ struct SegmentedProgressContent: View {
         var delay: Double = 0
         for i in range {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                withAnimation(.spring(response: 0.2, dampingFraction: 0.7)) {
+                withAnimation(Motion.respected(.spring(response: 0.2, dampingFraction: 0.7))) {
                     glowIndex = i
                 }
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + delay + 0.2) {
                 if glowIndex == i {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    withAnimation(Motion.respected(.spring(response: 0.3, dampingFraction: 0.8))) {
                         glowIndex = nil
                     }
                 }

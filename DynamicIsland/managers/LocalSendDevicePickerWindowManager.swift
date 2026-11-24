@@ -184,9 +184,11 @@ struct LocalSendDevicePickerView: View {
                             .foregroundStyle(.white.opacity(0.8))
                             .rotationEffect(.degrees(localSend.isRefreshing ? 360 : 0))
                             .animation(
-                                localSend.isRefreshing
-                                    ? .linear(duration: 0.85).repeatForever(autoreverses: false)
-                                    : .easeOut(duration: 0.2),
+                                Motion.respected(
+                                    localSend.isRefreshing
+                                        ? .linear(duration: 0.85).repeatForever(autoreverses: false)
+                                        : .easeOut(duration: 0.2)
+                                ),
                                 value: localSend.isRefreshing
                             )
                             .frame(width: 32, height: 32)
@@ -388,7 +390,7 @@ private struct DeviceGridItem: View {
         }
         .buttonStyle(.plain)
         .scaleEffect(isHovered ? 1.02 : 1.0)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovered)
+        .animation(Motion.respected(.spring(response: 0.3, dampingFraction: 0.7)), value: isHovered)
     }
     
     private var deviceIcon: String {

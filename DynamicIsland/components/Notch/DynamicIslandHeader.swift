@@ -72,7 +72,7 @@ struct DynamicIslandHeader: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .opacity(vm.notchState == .closed ? 0 : 1)
             .blur(radius: vm.notchState == .closed ? 20 : 0)
-            .animation(.smooth.delay(0.1), value: vm.notchState)
+            .animation(Motion.respected(.smooth.delay(0.1)), value: vm.notchState)
             .zIndex(2)
             .padding(8)
 
@@ -96,7 +96,7 @@ struct DynamicIslandHeader: View {
             .frame(maxWidth: .infinity, alignment: .trailing)
             .opacity(vm.notchState == .closed ? 0 : 1)
             .blur(radius: vm.notchState == .closed ? 20 : 0)
-            .animation(.smooth.delay(0.1), value: vm.notchState)
+            .animation(Motion.respected(.smooth.delay(0.1)), value: vm.notchState)
             .zIndex(2)
         }
         .foregroundColor(.gray)

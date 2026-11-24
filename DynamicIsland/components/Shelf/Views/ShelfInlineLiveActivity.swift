@@ -48,7 +48,7 @@ struct ShelfInlineLiveActivity: View {
                 .font(.system(.callout, design: .rounded, weight: .bold))
                 .foregroundStyle(.white)
                 .contentTransition(.numericText(countsDown: false))
-                .animation(.smooth(duration: 0.3), value: shelfState.items.count)
+                .animation(Motion.respected(.smooth(duration: 0.3)), value: shelfState.items.count)
                 .frame(width: sideWidth, alignment: .trailing)
         }
         .frame(height: vm.effectiveClosedNotchHeight, alignment: .center)

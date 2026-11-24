@@ -192,10 +192,10 @@ struct ContentView: View {
         .asymmetric(
             insertion: .opacity
                 .combined(with: .scale(scale: 0.965, anchor: .center))
-                .animation(.spring(response: 0.34, dampingFraction: 0.88)),
+                .animation(Motion.respected(.spring(response: 0.34, dampingFraction: 0.88))),
             removal: .opacity
                 .combined(with: .scale(scale: 0.92, anchor: .center))
-                .animation(.smooth(duration: 0.22))
+                .animation(Motion.respected(.smooth(duration: 0.22)))
         )
     }
     
@@ -358,10 +358,10 @@ struct ContentView: View {
                 let hoverAnimation = Animation.bouncy.speed(1.2)
                 let notchStateAnimation = Animation.spring(response: 0.42, dampingFraction: 1.0, blendDuration: 0)
                 return view
-                    .animation(hoverAnimation, value: isHovering)
-                    .animation(notchStateAnimation, value: vm.notchState)
-                    .animation(.smooth, value: gestureProgress)
-                    .transition(.blurReplace.animation(.interactiveSpring(dampingFraction: 1.2)))
+                    .animation(Motion.respected(hoverAnimation), value: isHovering)
+                    .animation(Motion.respected(notchStateAnimation), value: vm.notchState)
+                    .animation(Motion.respected(.smooth), value: gestureProgress)
+                    .transition(.blurReplace.animation(Motion.respected(.interactiveSpring(dampingFraction: 1.2))))
             }
             .conditionalModifier(useModernCloseAnimation) { view in
                 // 原来 open/close 都是 dampingFraction 1.0（完全不回弹），
@@ -371,9 +371,9 @@ struct ContentView: View {
                 let closeAnimation = Animation.spring(response: 0.36, dampingFraction: 0.94, blendDuration: 0.1)
                 let notchAnimation = vm.notchState == .open ? openAnimation : closeAnimation
                 return view
-                    .animation(hoverAnimation, value: isHovering)
-                    .animation(notchAnimation, value: vm.notchState)
-                    .animation(.smooth, value: gestureProgress)
+                    .animation(Motion.respected(hoverAnimation), value: isHovering)
+                    .animation(Motion.respected(notchAnimation), value: vm.notchState)
+                    .animation(Motion.respected(.smooth), value: gestureProgress)
             }
             .conditionalModifier(interactionsEnabled) { view in
                 view
@@ -561,9 +561,9 @@ struct ContentView: View {
                               .transition(AnyTransition.move(edge: .trailing).combined(with: .opacity))
                       } else if !coordinator.expandingView.show && vm.notchState == .closed && !shelfState.isEmpty && !vm.hideOnClosed && !lockScreenManager.isLocked && !enableMinimalisticUI {
                           ShelfInlineLiveActivity()
-                              .transition(.opacity.animation(.smooth(duration: 0.25)))
+                              .transition(.opacity.animation(Motion.respected(.smooth(duration: 0.25))))
                       } else if !isCurrentScreenExpansionVisible && vm.notchState == .closed && Defaults[.showNotHumanFace] && !vm.hideOnClosed  {
-                          DynamicIslandFaceAnimation().animation(.interactiveSpring, value: vm.notchState)
+                          DynamicIslandFaceAnimation().animation(Motion.respected(.interactiveSpring), value: vm.notchState)
                       } else if vm.notchState == .open {
                           DynamicIslandHeader()
                               .frame(height: (Defaults[.enableMinimalisticUI] && isDynamicIslandMode) ? nil : max(24, vm.effectiveClosedNotchHeight))
@@ -595,7 +595,7 @@ struct ContentView: View {
                   }
               }
               .offset(x: menuBarClearanceOffset)
-              .animation(.smooth(duration: 0.25), value: menuBarClearanceOffset)
+              .animation(Motion.respected(.smooth(duration: 0.25)), value: menuBarClearanceOffset)
               .zIndex(2)
               
               ZStack(alignment: .top) {
@@ -616,7 +616,7 @@ struct ContentView: View {
               .allowsHitTesting(vm.notchState == .open)
               .blur(radius: abs(gestureProgress) > 0.3 ? min(abs(gestureProgress), 8) : 0)
               .opacity(abs(gestureProgress) > 0.3 ? min(abs(gestureProgress * 2), 0.8) : 1)
-              .animation(.smooth(duration: 0.3), value: coordinator.currentView)
+              .animation(Motion.respected(.smooth(duration: 0.3)), value: coordinator.currentView)
           }
       }
 

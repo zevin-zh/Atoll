@@ -67,7 +67,7 @@ class CapsLockManager: ObservableObject {
         
         guard newState != isCapsLockActive else { return }
         
-        withAnimation(capsLockAnimation) {
+        withAnimation(Motion.respected(capsLockAnimation)) {
             isCapsLockActive = newState
         }
         
